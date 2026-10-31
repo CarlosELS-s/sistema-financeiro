@@ -127,7 +127,10 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
 });
-
+document.getElementById("arquivoExcel").addEventListener(
+    "change",
+    importarExcel
+);
 
 // ======================================
 // ATUALIZAR TELA
@@ -581,5 +584,113 @@ function mostrarMensagem(texto, tipo) {
     mensagem.textContent = texto;
 
     mensagem.className = `form-message ${tipo}`;
+
+}
+// ======================================
+// EXPORTAR PLANILHA EXCEL
+// ======================================
+
+async function exportarExcel() {
+
+    try {
+
+        const resposta = await fetch(
+            `${API_URL}/planilhas/exportar`
+        );
+
+        if (!resposta.ok) {
+            throw new Error("Erro ao exportar planilha.");
+        }
+
+        const blob = await resposta.blob();
+
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+
+        link.href = url;
+
+        link.download = "movimentacoes_financeiras.xlsx";
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        link.remove();
+
+        URL.revokeObjectURL(url);
+
+    } catch (erro) {
+
+        alert(erro.message);
+
+    }
+
+}
+
+
+// ======================================
+// IMPORTAR PLANILHA EXCEL
+// ======================================
+
+async function importarExcel(evento) {
+
+    const arquivo = evento.target.files[0];
+
+    if (!arquivo) return;
+
+    if (!arquivo.name.toLowerCase().endsWith(".xlsx")) {
+        alert("Selecione um arquivo Excel .xlsx.");
+        evento.target.value = "";
+        return;
+    }
+
+    const confirmar = confirm(
+        "Deseja importar as movimentações desta planilha? " +
+        "As novas movimentações serão adicionadas às existentes."
+    );
+
+    if (!confirmar) {
+        evento.target.value = "";
+        return;
+    }
+
+    const formulario = new FormData();
+
+    formulario.append("arquivo", arquivo);
+
+    try {
+
+        const resposta = await fetch(
+            `${API_URL}/planilhas/importar`,
+            {
+                method: "POST",
+                body: formulario
+            }
+        );
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+            throw new Error(
+                dados.detail || "Erro ao importar planilha."
+            );
+        }
+
+        alert(
+            `${dados.importadas} movimentações importadas com sucesso!`
+        );
+
+        atualizarTela();
+
+    } catch (erro) {
+
+        alert(erro.message);
+
+    } finally {
+
+        evento.target.value = "";
+
+    }
 
 }

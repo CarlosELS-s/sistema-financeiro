@@ -787,3 +787,52 @@ footer {
     }
 
 }
+/* BOTÕES DE PLANILHA */
+
+.transaction-actions {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex-wrap: wrap;
+}
+
+.btn-excel,
+.btn-import {
+    padding: 11px 13px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    transition: 0.2s;
+}
+
+.btn-excel {
+    background: #14532d;
+    color: #86efac;
+}
+
+.btn-excel:hover {
+    background: #166534;
+}
+
+.btn-import {
+    background: #1e3a5f;
+    color: #93c5fd;
+}
+
+.btn-import:hover {
+    background: #1d4ed8;
+    color: white;
+}
+
+@media (max-width: 600px) {
+
+    .transaction-actions {
+        width: 100%;
+    }
+
+    .transaction-actions button,
+    .transaction-actions select {
+        flex: 1;
+    }
+
+}

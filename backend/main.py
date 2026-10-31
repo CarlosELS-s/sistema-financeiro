@@ -37,7 +37,6 @@ app.mount(
 def inicio():
     return FileResponse(FRONTEND_DIR / "index.html")
 
-
 @app.get("/api")
 def verificar_api():
     return {

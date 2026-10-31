@@ -316,6 +316,46 @@
 
                 <div class="panel-header transactions-header">
 
+    <div>
+        <h3>Movimentações recentes</h3>
+        <p>Histórico financeiro</p>
+    </div>
+
+    <div class="transaction-actions">
+
+        <select id="filtroTipo" class="filter-select">
+            <option value="">Todas</option>
+            <option value="receita">Receitas</option>
+            <option value="despesa">Despesas</option>
+        </select>
+
+        <button
+            type="button"
+            class="btn-excel"
+            onclick="exportarExcel()"
+        >
+            ↓ Exportar Excel
+        </button>
+
+        <button
+            type="button"
+            class="btn-import"
+            onclick="document.getElementById('arquivoExcel').click()"
+        >
+            ↑ Importar Excel
+        </button>
+
+        <input
+            type="file"
+            id="arquivoExcel"
+            accept=".xlsx"
+            hidden
+        >
+
+    </div>
+
+</div>
+
                     <div>
                         <h3>Movimentações recentes</h3>
                         <p>Histórico financeiro</p>
