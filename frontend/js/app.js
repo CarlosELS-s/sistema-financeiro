@@ -1,3 +1,4 @@
+
 const API_URL = "/api";
 
 const categorias = {
@@ -45,13 +46,15 @@ const formatarMoeda = (valor) => {
 };
 
 const formatarData = (data) => {
+    if (!data) return "-";
+
     const [ano, mes, dia] = data.split("-");
 
     return `${dia}/${mes}/${ano}`;
 };
 
 const escaparHTML = (valor) => {
-    return String(valor).replace(/[&<>"']/g, caractere => {
+    return String(valor ?? "").replace(/[&<>"']/g, caractere => {
         const mapa = {
             "&": "&amp;",
             "<": "&lt;",
@@ -126,11 +129,13 @@ document.addEventListener("DOMContentLoaded", () => {
         salvarTransacao
     );
 
+    document.getElementById("arquivoExcel").addEventListener(
+        "change",
+        importarExcel
+    );
+
 });
-document.getElementById("arquivoExcel").addEventListener(
-    "change",
-    importarExcel
-);
+
 
 // ======================================
 // ATUALIZAR TELA
@@ -169,6 +174,65 @@ function atualizarCategorias() {
 
 
 // ======================================
+// BUSCAR CONTAS FIXAS DO MÊS
+// ======================================
+
+async function carregarContasFixasDoMes(mes) {
+
+    if (!mes) return [];
+
+    try {
+
+        const contas = await requisicao(
+            `${API_URL}/contas-fixas/mensais?mes=${encodeURIComponent(mes)}`
+        );
+
+        const [anoSelecionado, mesSelecionado] = mes.split("-").map(Number);
+
+        return contas
+            .filter(conta => {
+
+                const pertenceAoMes =
+                    Number(conta.ano) === anoSelecionado &&
+                    Number(conta.mes) === mesSelecionado;
+
+                // Somente pendentes entram como previsão.
+                // As pagas já aparecem em /transacoes.
+                return pertenceAoMes && conta.status === "pendente";
+
+            })
+            .map(conta => ({
+
+                id: `conta-fixa-${conta.id}`,
+
+                descricao: conta.nome,
+
+                categoria: conta.categoria || "Contas",
+
+                data: conta.vencimento,
+
+                tipo: "despesa",
+
+                valor: Number(conta.valor_previsto || 0),
+
+                prevista: true,
+
+                contaMensalId: conta.id
+
+            }));
+
+    } catch (erro) {
+
+        console.error("Erro ao carregar contas fixas:", erro);
+
+        return [];
+
+    }
+
+}
+
+
+// ======================================
 // DASHBOARD
 // ======================================
 
@@ -178,9 +242,29 @@ async function carregarDashboard() {
 
     try {
 
-        const dados = await requisicao(
-            `${API_URL}/dashboard?mes=${encodeURIComponent(mes)}`
+        const [dados, contasPendentes] = await Promise.all([
+
+            requisicao(
+                `${API_URL}/dashboard?mes=${encodeURIComponent(mes)}`
+            ),
+
+            carregarContasFixasDoMes(mes)
+
+        ]);
+
+        const totalContasPendentes = contasPendentes.reduce(
+            (soma, conta) => soma + conta.valor,
+            0
         );
+
+        // As despesas pagas já estão no dashboard.
+        // Somamos apenas as contas que ainda estão pendentes.
+        const despesasComPrevisao =
+            Number(dados.despesas_mes || 0) + totalContasPendentes;
+
+        const saldoComPrevisao =
+            Number(dados.saldo_mes || 0) - totalContasPendentes;
+
 
         document.getElementById("saldoTotal").textContent =
             formatarMoeda(dados.saldo_total);
@@ -189,22 +273,58 @@ async function carregarDashboard() {
             formatarMoeda(dados.receitas_mes);
 
         document.getElementById("despesasMes").textContent =
-            formatarMoeda(dados.despesas_mes);
+            formatarMoeda(despesasComPrevisao);
 
         document.getElementById("saldoMes").textContent =
-            formatarMoeda(dados.saldo_mes);
+            formatarMoeda(saldoComPrevisao);
 
         document.getElementById("saldoMes").className =
-            dados.saldo_mes >= 0 ? "green-text" : "red-text";
+            saldoComPrevisao >= 0 ? "green-text" : "red-text";
+
 
         atualizarGraficoComparacao(
             dados.receitas_mes,
-            dados.despesas_mes
+            despesasComPrevisao
         );
 
-        atualizarGraficoCategorias(
-            dados.despesas_categoria
+
+        // Agrupa as despesas registradas e as contas pendentes
+        // para mostrar tudo no gráfico de categorias.
+        const categoriasAgrupadas = new Map();
+
+        (dados.despesas_categoria || []).forEach(item => {
+
+            const categoria = item.categoria || "Outros";
+
+            categoriasAgrupadas.set(
+                categoria,
+                (categoriasAgrupadas.get(categoria) || 0) +
+                Number(item.valor || 0)
+            );
+
+        });
+
+        contasPendentes.forEach(conta => {
+
+            const categoria = conta.categoria || "Contas";
+
+            categoriasAgrupadas.set(
+                categoria,
+                (categoriasAgrupadas.get(categoria) || 0) +
+                conta.valor
+            );
+
+        });
+
+        const despesasPorCategoria = Array.from(
+            categoriasAgrupadas,
+            ([categoria, valor]) => ({
+                categoria,
+                valor
+            })
         );
+
+        atualizarGraficoCategorias(despesasPorCategoria);
 
     } catch (erro) {
 
@@ -321,7 +441,7 @@ function atualizarGraficoCategorias(dados) {
 
 
 // ======================================
-// LISTAR TRANSAÇÕES
+// LISTAR TRANSAÇÕES E CONTAS FIXAS
 // ======================================
 
 async function carregarTransacoes() {
@@ -348,13 +468,51 @@ async function carregarTransacoes() {
 
         if (tipo) parametros.append("tipo", tipo);
 
-        const transacoes = await requisicao(
-            `${API_URL}/transacoes?${parametros.toString()}`
-        );
+        const [transacoes, contasPendentes] = await Promise.all([
+
+            requisicao(
+                `${API_URL}/transacoes?${parametros.toString()}`
+            ),
+
+            carregarContasFixasDoMes(mes)
+
+        ]);
+
+
+        // Junta as movimentações reais com as contas pendentes.
+        // Pagamentos não são adicionados novamente, pois já estão
+        // registrados como transações no banco.
+        let movimentacoes = [
+            ...transacoes.map(transacao => ({
+                ...transacao,
+                prevista: false
+            })),
+
+            ...contasPendentes
+        ];
+
+
+        if (tipo) {
+            movimentacoes = movimentacoes.filter(
+                item => item.tipo === tipo
+            );
+        }
+
+
+        // Ordena pela data, da mais recente para a mais antiga.
+        movimentacoes.sort((a, b) => {
+
+            const dataA = a.data || "";
+            const dataB = b.data || "";
+
+            return dataB.localeCompare(dataA);
+
+        });
+
 
         tabela.innerHTML = "";
 
-        if (transacoes.length === 0) {
+        if (movimentacoes.length === 0) {
 
             tabela.innerHTML = `
                 <tr>
@@ -367,7 +525,8 @@ async function carregarTransacoes() {
             return;
         }
 
-        transacoes.forEach(transacao => {
+
+        movimentacoes.forEach(transacao => {
 
             const tr = document.createElement("tr");
 
@@ -377,10 +536,27 @@ async function carregarTransacoes() {
 
             const sinal = receita ? "+" : "-";
 
+            const ehPrevista = transacao.prevista === true;
+
+
             tr.innerHTML = `
 
                 <td class="transaction-name">
                     ${escaparHTML(transacao.descricao)}
+
+                    ${ehPrevista ? `
+                        <span style="
+                            display:inline-block;
+                            margin-left:6px;
+                            padding:3px 7px;
+                            border-radius:5px;
+                            font-size:10px;
+                            background:#78350f;
+                            color:#fcd34d;
+                        ">
+                            Prevista
+                        </span>
+                    ` : ""}
                 </td>
 
                 <td class="transaction-category">
@@ -393,7 +569,7 @@ async function carregarTransacoes() {
 
                 <td>
                     <span class="type-badge type-${transacao.tipo}">
-                        ${tipoTexto}
+                        ${ehPrevista ? "Despesa prevista" : tipoTexto}
                     </span>
                 </td>
 
@@ -402,22 +578,33 @@ async function carregarTransacoes() {
                 </td>
 
                 <td>
-                    <button
-                        class="delete-btn"
-                        title="Excluir movimentação"
-                        aria-label="Excluir movimentação"
-                        data-id="${transacao.id}"
-                    >
-                        ✕
-                    </button>
+                    ${
+                        ehPrevista
+                            ? '<span style="color:#94a3b8;">Conta fixa</span>'
+                            : `
+                                <button
+                                    class="delete-btn"
+                                    title="Excluir movimentação"
+                                    aria-label="Excluir movimentação"
+                                    data-id="${transacao.id}"
+                                >
+                                    ✕
+                                </button>
+                            `
+                    }
                 </td>
 
             `;
 
-            tr.querySelector(".delete-btn").addEventListener(
-                "click",
-                () => excluirTransacao(transacao.id)
-            );
+
+            if (!ehPrevista) {
+
+                tr.querySelector(".delete-btn").addEventListener(
+                    "click",
+                    () => excluirTransacao(transacao.id)
+                );
+
+            }
 
             tabela.appendChild(tr);
 
@@ -425,7 +612,7 @@ async function carregarTransacoes() {
 
     } catch (erro) {
 
-        console.error("Erro ao listar transações:", erro);
+        console.error("Erro ao listar movimentações:", erro);
 
         tabela.innerHTML = `
             <tr>
@@ -586,6 +773,8 @@ function mostrarMensagem(texto, tipo) {
     mensagem.className = `form-message ${tipo}`;
 
 }
+
+
 // ======================================
 // EXPORTAR PLANILHA EXCEL
 // ======================================

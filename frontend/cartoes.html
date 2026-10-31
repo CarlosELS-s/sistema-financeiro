@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Cartões de Crédito | Meu Financeiro</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="app">
+
+    <aside class="sidebar">
+
+        <div class="logo">
+            <div class="logo-icon">M</div>
+            <div>
+                <h2>Meu Financeiro</h2>
+                <span>Controle pessoal</span>
+            </div>
+        </div>
+
+        <div class="menu-title">MENU PRINCIPAL</div>
+
+        <nav class="menu">
+
+            <a href="/" class="menu-item">
+                <span>▦</span>
+                Dashboard
+            </a>
+
+            <a href="/#transacoes" class="menu-item">
+                <span>↔</span>
+                Transações
+            </a>
+
+            <a href="/contas-fixas" class="menu-item">
+                <span>▣</span>
+                Contas Fixas
+            </a>
+
+            <a href="/cartoes" class="menu-item active">
+                <span>💳</span>
+                Cartões de crédito
+            </a>
+
+            <a href="/#nova-transacao" class="menu-item">
+                <span>＋</span>
+                Nova movimentação
+            </a>
+
+            <a href="/#relatorios" class="menu-item">
+                <span>▤</span>
+                Relatórios
+            </a>
+
+        </nav>
+
+    </aside>
+
+    <main class="main-content">
+
+        <header class="topbar">
+
+            <div>
+                <h1>Cartões de crédito</h1>
+                <p>Cadastre e gerencie seus cartões.</p>
+            </div>
+
+            <button class="btn-primary" id="btnMostrarCadastro">
+                + Adicionar cartão
+            </button>
+
+        </header>
+
+        <!-- CADASTRO DE CARTÃO -->
+
+        <section class="panel" id="formularioCartao" hidden>
+
+            <div class="panel-header">
+                <div>
+                    <h3>Novo cartão</h3>
+                    <p>Informe os dados do cartão.</p>
+                </div>
+            </div>
+
+            <form id="formCartao">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label for="nomeCartao">Nome do cartão</label>
+                        <input
+                            id="nomeCartao"
+                            required
+                            maxlength="100"
+                            placeholder="Ex: Cartão principal"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bancoCartao">Banco</label>
+                        <input
+                            id="bancoCartao"
+                            maxlength="100"
+                            placeholder="Ex: Banco"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="limiteCartao">Limite total (R$)</label>
+                        <input
+                            id="limiteCartao"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fechamentoCartao">Dia de fechamento</label>
+                        <input
+                            id="fechamentoCartao"
+                            type="number"
+                            min="1"
+                            max="31"
+                            value="9"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="vencimentoCartao">Dia de vencimento</label>
+                        <input
+                            id="vencimentoCartao"
+                            type="number"
+                            min="1"
+                            max="31"
+                            value="16"
+                            required
+                        >
+                    </div>
+
+                </div>
+
+                <div class="form-actions">
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        id="btnCancelarCadastro"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="btn-primary">
+                        Salvar cartão
+                    </button>
+
+                </div>
+
+                <p id="mensagemCartao" class="form-message"></p>
+
+            </form>
+
+        </section>
+
+        <!-- CARTÕES CADASTRADOS -->
+
+        <section>
+
+            <div class="section-heading">
+                <div>
+                    <h2>Meus cartões</h2>
+                    <p>Visualize os cartões cadastrados e seus limites.</p>
+                </div>
+            </div>
+
+            <div id="listaCartoes" class="cards">
+                <p>Carregando cartões...</p>
+            </div>
+
+        </section>
+
+        <footer>
+            Meu Financeiro © 2026 — Controle financeiro pessoal
+        </footer>
+
+    </main>
+
+</div>
+
+<script src="/js/cartoes.js"></script>
+
+</body>
+</html>

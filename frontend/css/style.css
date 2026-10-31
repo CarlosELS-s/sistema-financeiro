@@ -836,3 +836,187 @@ footer {
     }
 
 }
+
+/* =====================================
+   CONTAS FIXAS
+===================================== */
+
+.contas-panel {
+    margin-top: 25px;
+}
+
+.contas-resumo {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.conta-resumo-card {
+    background: #1b293d;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.conta-resumo-card span {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.conta-resumo-card strong {
+    display: block;
+    font-size: 22px;
+    margin-top: 12px;
+}
+
+.conta-checkbox {
+    margin-top: 20px;
+}
+
+.conta-checkbox label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.conta-checkbox input {
+    accent-color: var(--green);
+}
+
+.contas-list-header {
+    margin-top: 35px;
+}
+
+.conta-status {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.conta-status.paga {
+    color: var(--green);
+    background: #123b29;
+}
+
+.conta-status.pendente {
+    color: #fbbf24;
+    background: #453817;
+}
+
+.conta-atrasada {
+    display: inline-block;
+    margin-left: 6px;
+    color: var(--red);
+    font-size: 10px;
+}
+
+.conta-valor-pago {
+    color: var(--green);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.btn-pagar {
+    padding: 8px 12px;
+    font-size: 11px;
+}
+
+@media (max-width: 700px) {
+    .contas-resumo {
+        grid-template-columns: 1fr;
+    }
+}
+.acoes-conta {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+}
+
+.btn-editar-conta,
+.btn-remover-conta {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    background: var(--panel-hover);
+    color: var(--text);
+}
+
+.btn-editar-conta:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+}
+
+.btn-remover-conta:hover {
+    border-color: var(--red);
+    color: var(--red);
+}
+
+/* =====================================
+   EDITOR DE CONTA NA PRÓPRIA PÁGINA
+===================================== */
+
+.editor-conta {
+    padding: 18px;
+    border: 1px solid var(--border-color, #333);
+    border-radius: 12px;
+    background: var(--card-background, #181818);
+}
+
+.editor-conta h4 {
+    margin: 0 0 18px;
+}
+
+.editor-conta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.editor-conta-grid label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 13px;
+}
+
+.editor-conta-grid input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.acoes-editor-conta {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.acoes-editor-conta button,
+.acoes-conta button {
+    cursor: pointer;
+}
+
+.cancelar-edicao {
+    padding: 10px 16px;
+    border: 1px solid var(--border-color, #444);
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+}
+
+@media (max-width: 650px) {
+    .editor-conta-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .acoes-editor-conta {
+        flex-direction: column;
+    }
+}

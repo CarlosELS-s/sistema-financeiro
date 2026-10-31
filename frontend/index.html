@@ -1,9 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Financeiro | Meu Controle</title>
@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="/css/style.css">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -48,6 +47,16 @@
                     Transações
                 </a>
 
+                <a href="/contas-fixas" class="menu-item">
+                    <span>▣</span>
+                    Contas Fixas
+                </a>
+
+                <a href="/cartoes" class="menu-item">
+                    <span>💳</span>
+                    Cartões de crédito
+                </a>
+
                 <a href="#nova-transacao" class="menu-item">
                     <span>＋</span>
                     Nova movimentação
@@ -61,6 +70,7 @@
             </nav>
 
             <div class="sidebar-bottom">
+
                 <div class="user-card">
                     <div class="user-avatar">U</div>
 
@@ -69,13 +79,17 @@
                         <span>Conta pessoal</span>
                     </div>
                 </div>
+
             </div>
 
         </aside>
 
-        <!-- CONTEÚDO -->
+
+        <!-- CONTEÚDO PRINCIPAL -->
 
         <main class="main-content">
+
+            <!-- TOPO -->
 
             <header class="topbar">
 
@@ -86,15 +100,23 @@
 
                 <div class="topbar-actions">
 
-                    <input type="month" id="mesFiltro" class="month-input">
+                    <input
+                        type="month"
+                        id="mesFiltro"
+                        class="month-input"
+                    >
 
-                    <button class="btn-primary" onclick="irParaFormulario()">
+                    <button
+                        class="btn-primary"
+                        onclick="irParaFormulario()"
+                    >
                         + Nova transação
                     </button>
 
                 </div>
 
             </header>
+
 
             <!-- DASHBOARD -->
 
@@ -109,7 +131,10 @@
 
                 <div class="cards">
 
+                    <!-- SALDO TOTAL -->
+
                     <div class="card balance-card">
+
                         <div class="card-top">
                             <span>Saldo total</span>
                             <div class="card-icon">R$</div>
@@ -118,9 +143,14 @@
                         <h2 id="saldoTotal">R$ 0,00</h2>
 
                         <p>Resultado acumulado</p>
+
                     </div>
 
+
+                    <!-- RECEITAS -->
+
                     <div class="card">
+
                         <div class="card-top">
                             <span>Receitas do mês</span>
                             <div class="card-icon green">↗</div>
@@ -131,9 +161,14 @@
                         </h2>
 
                         <p>Dinheiro que entrou</p>
+
                     </div>
 
+
+                    <!-- DESPESAS -->
+
                     <div class="card">
+
                         <div class="card-top">
                             <span>Despesas do mês</span>
                             <div class="card-icon red">↘</div>
@@ -144,9 +179,14 @@
                         </h2>
 
                         <p>Dinheiro que saiu</p>
+
                     </div>
 
+
+                    <!-- RESULTADO DO MÊS -->
+
                     <div class="card">
+
                         <div class="card-top">
                             <span>Resultado do mês</span>
                             <div class="card-icon blue">◈</div>
@@ -155,13 +195,17 @@
                         <h2 id="saldoMes">R$ 0,00</h2>
 
                         <p>Receitas menos despesas</p>
+
                     </div>
 
                 </div>
 
+
                 <!-- GRÁFICOS -->
 
                 <div class="charts-grid" id="relatorios">
+
+                    <!-- RECEITAS X DESPESAS -->
 
                     <div class="panel">
 
@@ -196,6 +240,9 @@
 
                     </div>
 
+
+                    <!-- DESPESAS POR CATEGORIA -->
+
                     <div class="panel">
 
                         <div class="panel-header">
@@ -208,10 +255,12 @@
                         <div class="category-chart">
 
                             <div id="graficoCategorias" class="donut">
+
                                 <div class="donut-center">
                                     <strong id="totalCategorias">R$ 0,00</strong>
                                     <span>Total gasto</span>
                                 </div>
+
                             </div>
 
                             <div id="legendaCategorias" class="legend"></div>
@@ -224,7 +273,8 @@
 
             </section>
 
-            <!-- FORMULÁRIO -->
+
+            <!-- NOVA MOVIMENTAÇÃO -->
 
             <section id="nova-transacao" class="panel form-panel">
 
@@ -239,7 +289,10 @@
 
                     <div class="form-grid">
 
+                        <!-- DESCRIÇÃO -->
+
                         <div class="form-group">
+
                             <label for="descricao">Descrição</label>
 
                             <input
@@ -249,24 +302,39 @@
                                 maxlength="200"
                                 required
                             >
+
                         </div>
 
+
+                        <!-- TIPO -->
+
                         <div class="form-group">
+
                             <label for="tipo">Tipo</label>
 
                             <select id="tipo" required>
                                 <option value="receita">Receita</option>
                                 <option value="despesa">Despesa</option>
                             </select>
+
                         </div>
 
+
+                        <!-- CATEGORIA -->
+
                         <div class="form-group">
+
                             <label for="categoria">Categoria</label>
 
                             <select id="categoria" required></select>
+
                         </div>
 
+
+                        <!-- VALOR -->
+
                         <div class="form-group">
+
                             <label for="valor">Valor (R$)</label>
 
                             <input
@@ -278,9 +346,14 @@
                                 step="0.01"
                                 required
                             >
+
                         </div>
 
+
+                        <!-- DATA -->
+
                         <div class="form-group">
+
                             <label for="data">Data</label>
 
                             <input
@@ -288,9 +361,13 @@
                                 id="data"
                                 required
                             >
+
                         </div>
 
                     </div>
+
+
+                    <!-- BOTÕES -->
 
                     <div class="form-actions">
 
@@ -298,7 +375,11 @@
                             Limpar
                         </button>
 
-                        <button type="submit" class="btn-primary" id="btnSalvar">
+                        <button
+                            type="submit"
+                            class="btn-primary"
+                            id="btnSalvar"
+                        >
                             Salvar movimentação
                         </button>
 
@@ -310,70 +391,68 @@
 
             </section>
 
+
             <!-- TRANSAÇÕES -->
 
             <section id="transacoes" class="panel transactions-panel">
 
                 <div class="panel-header transactions-header">
 
-    <div>
-        <h3>Movimentações recentes</h3>
-        <p>Histórico financeiro</p>
-    </div>
-
-    <div class="transaction-actions">
-
-        <select id="filtroTipo" class="filter-select">
-            <option value="">Todas</option>
-            <option value="receita">Receitas</option>
-            <option value="despesa">Despesas</option>
-        </select>
-
-        <button
-            type="button"
-            class="btn-excel"
-            onclick="exportarExcel()"
-        >
-            ↓ Exportar Excel
-        </button>
-
-        <button
-            type="button"
-            class="btn-import"
-            onclick="document.getElementById('arquivoExcel').click()"
-        >
-            ↑ Importar Excel
-        </button>
-
-        <input
-            type="file"
-            id="arquivoExcel"
-            accept=".xlsx"
-            hidden
-        >
-
-    </div>
-
-</div>
-
                     <div>
                         <h3>Movimentações recentes</h3>
                         <p>Histórico financeiro</p>
                     </div>
 
-                    <select id="filtroTipo" class="filter-select">
-                        <option value="">Todas</option>
-                        <option value="receita">Receitas</option>
-                        <option value="despesa">Despesas</option>
-                    </select>
+                    <div class="transaction-actions">
+
+                        <select id="filtroTipo" class="filter-select">
+                            <option value="">Todas</option>
+                            <option value="receita">Receitas</option>
+                            <option value="despesa">Despesas</option>
+                        </select>
+
+
+                        <!-- EXPORTAR EXCEL -->
+
+                        <button
+                            type="button"
+                            class="btn-excel"
+                            onclick="exportarExcel()"
+                        >
+                            ↓ Exportar Excel
+                        </button>
+
+
+                        <!-- IMPORTAR EXCEL -->
+
+                        <button
+                            type="button"
+                            class="btn-import"
+                            onclick="document.getElementById('arquivoExcel').click()"
+                        >
+                            ↑ Importar Excel
+                        </button>
+
+                        <input
+                            type="file"
+                            id="arquivoExcel"
+                            accept=".xlsx"
+                            hidden
+                        >
+
+                    </div>
 
                 </div>
+
+
+                <!-- TABELA DE MOVIMENTAÇÕES -->
 
                 <div class="table-container">
 
                     <table>
 
                         <thead>
+
                             <tr>
                                 <th>Descrição</th>
                                 <th>Categoria</th>
@@ -382,6 +461,7 @@
                                 <th>Valor</th>
                                 <th>Ações</th>
                             </tr>
+
                         </thead>
 
                         <tbody id="tabelaTransacoes">
@@ -400,6 +480,9 @@
 
             </section>
 
+
+            <!-- RODAPÉ -->
+
             <footer>
                 Meu Financeiro © 2026 — Controle financeiro pessoal
             </footer>
@@ -408,7 +491,11 @@
 
     </div>
 
+
+    <!-- JAVASCRIPT -->
+
     <script src="/js/app.js"></script>
 
 </body>
+
 </html>
