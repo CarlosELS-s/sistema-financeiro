@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Financeiro | Meu Controle</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <!-- MENU LATERAL -->
+
+        <aside class="sidebar">
+
+            <div class="logo">
+                <div class="logo-icon">M</div>
+
+                <div>
+                    <h2>Meu Financeiro</h2>
+                    <span>Controle pessoal</span>
+                </div>
+            </div>
+
+            <div class="menu-title">MENU PRINCIPAL</div>
+
+            <nav class="menu">
+
+                <a href="#dashboard" class="menu-item active">
+                    <span>▦</span>
+                    Dashboard
+                </a>
+
+                <a href="#transacoes" class="menu-item">
+                    <span>↔</span>
+                    Transações
+                </a>
+
+                <a href="#nova-transacao" class="menu-item">
+                    <span>＋</span>
+                    Nova movimentação
+                </a>
+
+                <a href="#relatorios" class="menu-item">
+                    <span>▤</span>
+                    Relatórios
+                </a>
+
+            </nav>
+
+            <div class="sidebar-bottom">
+                <div class="user-card">
+                    <div class="user-avatar">U</div>
+
+                    <div>
+                        <strong>Meu usuário</strong>
+                        <span>Conta pessoal</span>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- CONTEÚDO -->
+
+        <main class="main-content">
+
+            <header class="topbar">
+
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Acompanhe sua vida financeira.</p>
+                </div>
+
+                <div class="topbar-actions">
+
+                    <input type="month" id="mesFiltro" class="month-input">
+
+                    <button class="btn-primary" onclick="irParaFormulario()">
+                        + Nova transação
+                    </button>
+
+                </div>
+
+            </header>
+
+            <!-- DASHBOARD -->
+
+            <section id="dashboard">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Visão geral</h2>
+                        <p>Resumo das suas finanças</p>
+                    </div>
+                </div>
+
+                <div class="cards">
+
+                    <div class="card balance-card">
+                        <div class="card-top">
+                            <span>Saldo total</span>
+                            <div class="card-icon">R$</div>
+                        </div>
+
+                        <h2 id="saldoTotal">R$ 0,00</h2>
+
+                        <p>Resultado acumulado</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-top">
+                            <span>Receitas do mês</span>
+                            <div class="card-icon green">↗</div>
+                        </div>
+
+                        <h2 id="receitasMes" class="green-text">
+                            R$ 0,00
+                        </h2>
+
+                        <p>Dinheiro que entrou</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-top">
+                            <span>Despesas do mês</span>
+                            <div class="card-icon red">↘</div>
+                        </div>
+
+                        <h2 id="despesasMes" class="red-text">
+                            R$ 0,00
+                        </h2>
+
+                        <p>Dinheiro que saiu</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-top">
+                            <span>Resultado do mês</span>
+                            <div class="card-icon blue">◈</div>
+                        </div>
+
+                        <h2 id="saldoMes">R$ 0,00</h2>
+
+                        <p>Receitas menos despesas</p>
+                    </div>
+
+                </div>
+
+                <!-- GRÁFICOS -->
+
+                <div class="charts-grid" id="relatorios">
+
+                    <div class="panel">
+
+                        <div class="panel-header">
+                            <div>
+                                <h3>Receitas x Despesas</h3>
+                                <p>Comparação do mês selecionado</p>
+                            </div>
+                        </div>
+
+                        <div class="comparison-chart">
+
+                            <div class="chart-info">
+                                <span>Receitas</span>
+                                <strong id="graficoReceitasValor">R$ 0,00</strong>
+                            </div>
+
+                            <div class="progress-track">
+                                <div id="barraReceitas" class="progress-fill green-fill"></div>
+                            </div>
+
+                            <div class="chart-info">
+                                <span>Despesas</span>
+                                <strong id="graficoDespesasValor">R$ 0,00</strong>
+                            </div>
+
+                            <div class="progress-track">
+                                <div id="barraDespesas" class="progress-fill red-fill"></div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="panel">
+
+                        <div class="panel-header">
+                            <div>
+                                <h3>Despesas por categoria</h3>
+                                <p>Distribuição dos gastos</p>
+                            </div>
+                        </div>
+
+                        <div class="category-chart">
+
+                            <div id="graficoCategorias" class="donut">
+                                <div class="donut-center">
+                                    <strong id="totalCategorias">R$ 0,00</strong>
+                                    <span>Total gasto</span>
+                                </div>
+                            </div>
+
+                            <div id="legendaCategorias" class="legend"></div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- FORMULÁRIO -->
+
+            <section id="nova-transacao" class="panel form-panel">
+
+                <div class="panel-header">
+                    <div>
+                        <h3>Nova movimentação</h3>
+                        <p>Cadastre uma receita ou despesa.</p>
+                    </div>
+                </div>
+
+                <form id="formTransacao">
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label for="descricao">Descrição</label>
+
+                            <input
+                                type="text"
+                                id="descricao"
+                                placeholder="Ex: Salário, mercado..."
+                                maxlength="200"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tipo">Tipo</label>
+
+                            <select id="tipo" required>
+                                <option value="receita">Receita</option>
+                                <option value="despesa">Despesa</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="categoria">Categoria</label>
+
+                            <select id="categoria" required></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="valor">Valor (R$)</label>
+
+                            <input
+                                type="number"
+                                id="valor"
+                                placeholder="0,00"
+                                min="0.01"
+                                max="9999999999.99"
+                                step="0.01"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="data">Data</label>
+
+                            <input
+                                type="date"
+                                id="data"
+                                required
+                            >
+                        </div>
+
+                    </div>
+
+                    <div class="form-actions">
+
+                        <button type="reset" class="btn-secondary">
+                            Limpar
+                        </button>
+
+                        <button type="submit" class="btn-primary" id="btnSalvar">
+                            Salvar movimentação
+                        </button>
+
+                    </div>
+
+                    <p id="mensagemFormulario" class="form-message"></p>
+
+                </form>
+
+            </section>
+
+            <!-- TRANSAÇÕES -->
+
+            <section id="transacoes" class="panel transactions-panel">
+
+                <div class="panel-header transactions-header">
+
+                    <div>
+                        <h3>Movimentações recentes</h3>
+                        <p>Histórico financeiro</p>
+                    </div>
+
+                    <select id="filtroTipo" class="filter-select">
+                        <option value="">Todas</option>
+                        <option value="receita">Receitas</option>
+                        <option value="despesa">Despesas</option>
+                    </select>
+
+                </div>
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Categoria</th>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Valor</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="tabelaTransacoes">
+
+                            <tr>
+                                <td colspan="6" class="empty">
+                                    Carregando movimentações...
+                                </td>
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+            <footer>
+                Meu Financeiro © 2026 — Controle financeiro pessoal
+            </footer>
+
+        </main>
+
+    </div>
+
+    <script src="/js/app.js"></script>
+
+</body>
+</html>
