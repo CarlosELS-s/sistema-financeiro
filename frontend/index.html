@@ -23,7 +23,7 @@
 
         <!-- MENU LATERAL -->
 
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
 
             <div class="logo">
 
@@ -102,9 +102,28 @@
 
         </aside>
 
+        <!-- FUNDO ESCURO DO MENU MOBILE -->
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
         <!-- CONTEÚDO PRINCIPAL -->
 
         <main class="main-content">
+
+            <!-- BOTÃO DE MENU PARA CELULAR -->
+
+            <button
+                type="button"
+                class="mobile-menu-button"
+                id="mobileMenuButton"
+                aria-label="Abrir menu"
+                aria-expanded="false"
+                aria-controls="sidebar"
+            >
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
 
             <!-- CABEÇALHO -->
 
@@ -152,6 +171,8 @@
 
                 <div class="cards">
 
+                    <!-- SALDO TOTAL -->
+
                     <div class="card balance-card">
 
                         <div class="card-top">
@@ -164,6 +185,8 @@
                         <p>Resultado acumulado</p>
 
                     </div>
+
+                    <!-- RECEITAS -->
 
                     <div class="card">
 
@@ -180,6 +203,8 @@
 
                     </div>
 
+                    <!-- DESPESAS -->
+
                     <div class="card">
 
                         <div class="card-top">
@@ -195,7 +220,9 @@
 
                     </div>
 
-                    <div class="card">
+                    <!-- RESULTADO DO MÊS EM DESTAQUE -->
+
+                    <div class="card result-card">
 
                         <div class="card-top">
                             <span>Resultado do mês</span>
@@ -213,6 +240,8 @@
                 <!-- GRÁFICOS -->
 
                 <div class="charts-grid" id="relatorios">
+
+                    <!-- RECEITAS X DESPESAS -->
 
                     <div class="panel">
 
@@ -248,6 +277,8 @@
                         </div>
 
                     </div>
+
+                    <!-- DESPESAS POR CATEGORIA -->
 
                     <div class="panel">
 
@@ -517,6 +548,64 @@
 
     <script src="/js/sidebar.js"></script>
     <script src="/js/app.js"></script>
+
+    <!-- CONTROLE DO MENU MOBILE -->
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+
+            const botao = document.getElementById("mobileMenuButton");
+            const sidebar = document.getElementById("sidebar");
+            const overlay = document.getElementById("sidebarOverlay");
+
+            if (!botao || !sidebar || !overlay) return;
+
+            const abrirMenu = () => {
+                sidebar.classList.add("sidebar-open");
+                overlay.classList.add("overlay-visible");
+                document.body.classList.add("menu-open");
+
+                botao.setAttribute("aria-expanded", "true");
+                botao.setAttribute("aria-label", "Fechar menu");
+            };
+
+            const fecharMenu = () => {
+                sidebar.classList.remove("sidebar-open");
+                overlay.classList.remove("overlay-visible");
+                document.body.classList.remove("menu-open");
+
+                botao.setAttribute("aria-expanded", "false");
+                botao.setAttribute("aria-label", "Abrir menu");
+            };
+
+            botao.addEventListener("click", () => {
+
+                sidebar.classList.contains("sidebar-open")
+                    ? fecharMenu()
+                    : abrirMenu();
+
+            });
+
+            overlay.addEventListener("click", fecharMenu);
+
+            sidebar.querySelectorAll(".menu-item").forEach(link => {
+                link.addEventListener("click", fecharMenu);
+            });
+
+            document.addEventListener("keydown", evento => {
+                if (evento.key === "Escape") {
+                    fecharMenu();
+                }
+            });
+
+            window.addEventListener("resize", () => {
+                if (window.innerWidth > 800) {
+                    fecharMenu();
+                }
+            });
+
+        });
+    </script>
 
 </body>
 
