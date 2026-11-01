@@ -1,8 +1,7 @@
-
 const API_URL = "/api";
 
 let cartoes = [];
-
+let cartaoEditandoId = null;
 
 // =====================================
 // AUTENTICAÇÃO
@@ -27,7 +26,6 @@ function verificarAutenticacaoCartoes() {
     return true;
 }
 
-
 // =====================================
 // UTILITÁRIOS
 // =====================================
@@ -45,7 +43,6 @@ function mensagem(elemento, texto, erro = false) {
     elemento.style.color = erro ? "#dc2626" : "#16a34a";
 }
 
-
 // =====================================
 // REQUISIÇÕES COM JWT
 // =====================================
@@ -60,10 +57,10 @@ async function requisicao(url, opcoes = {}) {
 
     const headers = {
         ...opcoes.headers,
-        "Authorization": `Bearer ${token}`
+        Authorization: `Bearer ${token}`
     };
 
-    if (!(opcoes.body instanceof FormData)) {
+    if (opcoes.body && !(opcoes.body instanceof FormData)) {
         headers["Content-Type"] = "application/json";
     }
 
@@ -90,9 +87,8 @@ async function requisicao(url, opcoes = {}) {
     return dados;
 }
 
-
 // =====================================
-// CADASTRO DE CARTÃO
+// FORMULÁRIO DE CADASTRO E EDIÇÃO
 // =====================================
 
 function inicializarCadastroCartao() {
@@ -101,11 +97,15 @@ function inicializarCadastroCartao() {
     const formulario = document.getElementById("formCartao");
 
     btnMostrar.addEventListener("click", () => {
+        cancelarEdicaoCartao();
+
         document.getElementById("formularioCartao").hidden = false;
+
+        document.getElementById("nomeCartao").focus();
     });
 
     btnCancelar.addEventListener("click", () => {
-        document.getElementById("formularioCartao").hidden = true;
+        cancelarEdicaoCartao();
     });
 
     formulario.addEventListener("submit", async event => {
@@ -141,33 +141,180 @@ function inicializarCadastroCartao() {
             dados.dia_vencimento < 1 ||
             dados.dia_vencimento > 31
         ) {
-            mensagem(msg, "Informe dias válidos de fechamento e vencimento.", true);
+            mensagem(
+                msg,
+                "Informe dias válidos de fechamento e vencimento.",
+                true
+            );
             return;
         }
 
         try {
-            await requisicao("/cartoes", {
-                method: "POST",
-                body: JSON.stringify(dados)
-            });
+            if (cartaoEditandoId !== null) {
+                await requisicao(`/cartoes/${cartaoEditandoId}`, {
+                    method: "PUT",
+                    body: JSON.stringify(dados)
+                });
+
+                mensagem(msg, "Cartão atualizado com sucesso!");
+            } else {
+                await requisicao("/cartoes", {
+                    method: "POST",
+                    body: JSON.stringify(dados)
+                });
+
+                mensagem(msg, "Cartão cadastrado com sucesso!");
+            }
 
             formulario.reset();
 
             document.getElementById("fechamentoCartao").value = 9;
             document.getElementById("vencimentoCartao").value = 16;
-            document.getElementById("formularioCartao").hidden = true;
 
-            mensagem(msg, "Cartão cadastrado com sucesso!");
+            cartaoEditandoId = null;
+
+            document.getElementById("formularioCartao").hidden = true;
 
             await carregarCartoes();
 
         } catch (erro) {
             mensagem(msg, erro.message, true);
-            console.error("Erro ao cadastrar cartão:", erro);
+            console.error("Erro ao salvar cartão:", erro);
         }
     });
 }
 
+// =====================================
+// CANCELAR EDIÇÃO
+// =====================================
+
+function cancelarEdicaoCartao() {
+    cartaoEditandoId = null;
+
+    const formulario = document.getElementById("formCartao");
+
+    formulario.reset();
+
+    document.getElementById("fechamentoCartao").value = 9;
+    document.getElementById("vencimentoCartao").value = 16;
+
+    document.getElementById("formularioCartao").hidden = true;
+
+    const titulo = document.querySelector(
+        "#formularioCartao .panel-header h3"
+    );
+
+    if (titulo) {
+        titulo.textContent = "Novo cartão";
+    }
+
+    const botaoSalvar = formulario.querySelector(
+        'button[type="submit"]'
+    );
+
+    if (botaoSalvar) {
+        botaoSalvar.textContent = "Salvar cartão";
+    }
+
+    mensagem(document.getElementById("mensagemCartao"), "");
+}
+
+// =====================================
+// EDITAR CARTÃO
+// =====================================
+
+function editarCartao(id) {
+    const cartao = cartoes.find(item => item.id === id);
+
+    if (!cartao) {
+        alert("Cartão não encontrado.");
+        return;
+    }
+
+    cartaoEditandoId = cartao.id;
+
+    document.getElementById("nomeCartao").value = cartao.nome || "";
+    document.getElementById("bancoCartao").value = cartao.banco || "";
+
+    document.getElementById("limiteCartao").value = (
+        Number(cartao.limite_centavos || 0) / 100
+    ).toFixed(2);
+
+    document.getElementById("fechamentoCartao").value =
+        cartao.dia_fechamento;
+
+    document.getElementById("vencimentoCartao").value =
+        cartao.dia_vencimento;
+
+    const titulo = document.querySelector(
+        "#formularioCartao .panel-header h3"
+    );
+
+    if (titulo) {
+        titulo.textContent = "Editar cartão";
+    }
+
+    const botaoSalvar = document.querySelector(
+        '#formCartao button[type="submit"]'
+    );
+
+    if (botaoSalvar) {
+        botaoSalvar.textContent = "Salvar alterações";
+    }
+
+    mensagem(document.getElementById("mensagemCartao"), "");
+
+    document.getElementById("formularioCartao").hidden = false;
+
+    document.getElementById("formularioCartao").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+}
+
+// =====================================
+// EXCLUIR CARTÃO
+// =====================================
+
+async function excluirCartao(id) {
+    const cartao = cartoes.find(item => item.id === id);
+
+    if (!cartao) {
+        alert("Cartão não encontrado.");
+        return;
+    }
+
+    const confirmar = confirm(
+        `Deseja realmente excluir o cartão "${cartao.nome}"?`
+    );
+
+    if (!confirmar) return;
+
+    try {
+        await requisicao(`/cartoes/${id}`, {
+            method: "DELETE"
+        });
+
+        alert("Cartão excluído com sucesso!");
+
+        if (cartaoEditandoId === id) {
+            cancelarEdicaoCartao();
+        }
+
+        await carregarCartoes();
+
+        const select = document.getElementById("filtroCartaoFatura");
+
+        if (select.value === String(id)) {
+            document.getElementById("listaFaturas").innerHTML =
+                "<p>Selecione um cartão para visualizar as compras.</p>";
+        }
+
+    } catch (erro) {
+        alert(erro.message);
+        console.error("Erro ao excluir cartão:", erro);
+    }
+}
 
 // =====================================
 // LISTAR CARTÕES
@@ -178,6 +325,8 @@ async function carregarCartoes() {
     const selectFatura = document.getElementById("filtroCartaoFatura");
 
     try {
+        const cartaoSelecionado = selectFatura.value;
+
         cartoes = await requisicao("/cartoes");
 
         lista.innerHTML = "";
@@ -220,13 +369,37 @@ async function carregarCartoes() {
             datas.textContent =
                 `Fecha dia ${cartao.dia_fechamento} · Vence dia ${cartao.dia_vencimento}`;
 
+            const acoes = document.createElement("div");
+            acoes.className = "form-actions";
+
+            const btnEditar = document.createElement("button");
+            btnEditar.type = "button";
+            btnEditar.className = "btn-secondary";
+            btnEditar.textContent = "Editar";
+
+            btnEditar.addEventListener("click", () => {
+                editarCartao(cartao.id);
+            });
+
+            const btnExcluir = document.createElement("button");
+            btnExcluir.type = "button";
+            btnExcluir.className = "btn-secondary";
+            btnExcluir.textContent = "Excluir";
+
+            btnExcluir.addEventListener("click", () => {
+                excluirCartao(cartao.id);
+            });
+
+            acoes.append(btnEditar, btnExcluir);
+
             card.append(
                 titulo,
                 banco,
                 limite,
                 utilizado,
                 restante,
-                datas
+                datas,
+                acoes
             );
 
             lista.appendChild(card);
@@ -238,12 +411,18 @@ async function carregarCartoes() {
             selectFatura.appendChild(opcaoFatura);
         });
 
+        if (
+            cartaoSelecionado &&
+            cartoes.some(c => String(c.id) === cartaoSelecionado)
+        ) {
+            selectFatura.value = cartaoSelecionado;
+        }
+
     } catch (erro) {
         lista.textContent = erro.message;
         console.error("Erro ao carregar cartões:", erro);
     }
 }
-
 
 // =====================================
 // FILTRO DE FATURAS
@@ -261,7 +440,6 @@ function inicializarFiltroFaturas() {
         }
     });
 }
-
 
 // =====================================
 // LISTAR COMPRAS E VALORES
@@ -290,10 +468,10 @@ async function carregarFaturas(cartaoId) {
             (fatura.compras || []).forEach(compra => {
                 const descricao = compra.descricao || "Compra";
 
-                const resultado = descricao.match(/\s*\((\d+)\/(\d+)\)$/);
+                const resultado = descricao.match(/\s\((\d+)\/(\d+)\)$/);
 
                 const nome = resultado
-                    ? descricao.replace(/\s*\(\d+\/\d+\)$/, "")
+                    ? descricao.replace(/\s\(\d+\/\d+\)$/, "")
                     : descricao;
 
                 const quantidade = resultado
@@ -358,7 +536,6 @@ async function carregarFaturas(cartaoId) {
         console.error("Erro ao carregar compras:", erro);
     }
 }
-
 
 // =====================================
 // INICIALIZAÇÃO
