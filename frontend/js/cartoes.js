@@ -548,4 +548,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     inicializarFiltroFaturas();
 
     await carregarCartoes();
-});
+}); 
