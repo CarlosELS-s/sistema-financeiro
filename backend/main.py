@@ -61,6 +61,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 
 
+
 app.mount(
     "/css",
     StaticFiles(directory=FRONTEND_DIR / "css"),
@@ -77,6 +78,9 @@ app.mount(
 # =====================================
 # PÁGINAS
 # =====================================
+@app.get("/favicon.png", include_in_schema=False)
+def favicon():
+    return FileResponse(FRONTEND_DIR / "favicon.png")
 
 @app.get("/login", include_in_schema=False)
 def pagina_login():
