@@ -1,6 +1,9 @@
+
 fastapi
 uvicorn[standard]
 sqlalchemy
 pydantic
 openpyxl
 python-multipart
+PyJWT
+pwdlib[argon2]

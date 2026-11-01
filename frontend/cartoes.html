@@ -5,7 +5,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Cartões de Crédito | Meu Financeiro</title>
 
     <link rel="stylesheet" href="/css/style.css">
@@ -24,6 +23,7 @@
 
         <div class="logo">
             <div class="logo-icon">M</div>
+
             <div>
                 <h2>Meu Financeiro</h2>
                 <span>Controle pessoal</span>
@@ -34,37 +34,53 @@
 
         <nav class="menu">
 
-            <a href="/" class="menu-item">
-                <span>▦</span>
-                Dashboard
+            <a href="/dashboard" class="menu-item">
+                <span>▦</span> Dashboard
             </a>
 
-            <a href="/#transacoes" class="menu-item">
-                <span>↔</span>
-                Transações
+            <a href="/dashboard#transacoes" class="menu-item">
+                <span>↔</span> Transações
             </a>
 
             <a href="/contas-fixas" class="menu-item">
-                <span>▣</span>
-                Contas Fixas
+                <span>▣</span> Contas Fixas
             </a>
 
             <a href="/cartoes" class="menu-item active">
-                <span>💳</span>
-                Cartões de crédito
+                <span>💳</span> Cartões de crédito
             </a>
 
-            <a href="/#nova-transacao" class="menu-item">
-                <span>＋</span>
-                Nova movimentação
+            <a href="/dashboard#nova-transacao" class="menu-item">
+                <span>＋</span> Nova movimentação
             </a>
 
-            <a href="/#relatorios" class="menu-item">
-                <span>▤</span>
-                Relatórios
+            <a href="/dashboard#relatorios" class="menu-item">
+                <span>▤</span> Relatórios
             </a>
 
         </nav>
+
+        <!-- USUÁRIO E SAÍDA -->
+
+        <div class="sidebar-bottom">
+
+            <div class="user-card">
+
+                <div class="user-avatar">U</div>
+
+                <div>
+                    <strong>Meu usuário</strong>
+                    <span>Conta pessoal</span>
+                </div>
+
+            </div>
+
+            <button id="btnSair" class="btn-sair" type="button">
+                <span class="sair-icon">↪</span>
+                <span>Sair da conta</span>
+            </button>
+
+        </div>
 
     </aside>
 
@@ -193,6 +209,35 @@
 
         </section>
 
+        <!-- FATURAS -->
+
+        <section class="panel">
+
+            <div class="panel-header">
+                <div>
+                    <h3>Faturas dos cartões</h3>
+                    <p>Consulte as compras e os valores de cada fatura.</p>
+                </div>
+            </div>
+
+            <div class="form-group">
+
+                <label for="filtroCartaoFatura">
+                    Selecione o cartão
+                </label>
+
+                <select id="filtroCartaoFatura">
+                    <option value="">Selecione um cartão</option>
+                </select>
+
+            </div>
+
+            <div id="listaFaturas">
+                <p>Selecione um cartão para visualizar as faturas.</p>
+            </div>
+
+        </section>
+
         <footer>
             Meu Financeiro © 2026 — Controle financeiro pessoal
         </footer>
@@ -201,6 +246,9 @@
 
 </div>
 
+<!-- JAVASCRIPT -->
+
+<script src="/js/sidebar.js"></script>
 <script src="/js/cartoes.js"></script>
 
 </body>

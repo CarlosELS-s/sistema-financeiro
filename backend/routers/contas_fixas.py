@@ -7,13 +7,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import ContaFixa, ContaMensal, Transacao
+from models import Usuario, ContaFixa, ContaMensal, Transacao
 from schemas import (
     ContaFixaCreate,
     ContaFixaResponse,
     ContaFixaUpdate,
     ContaPagar,
 )
+from auth import get_usuario_atual
+
 
 router = APIRouter(
     prefix="/api/contas-fixas",
@@ -95,6 +97,25 @@ def gerar_contas_mensais(
     db.flush()
 
 
+def buscar_conta_usuario(
+    db: Session,
+    conta_id: int,
+    usuario_id: int
+):
+    conta = db.query(ContaFixa).filter(
+        ContaFixa.id == conta_id,
+        ContaFixa.usuario_id == usuario_id
+    ).first()
+
+    if not conta:
+        raise HTTPException(
+            status_code=404,
+            detail="Conta fixa não encontrada."
+        )
+
+    return conta
+
+
 # =====================================
 # CADASTRAR CONTA FIXA
 # =====================================
@@ -102,9 +123,11 @@ def gerar_contas_mensais(
 @router.post("", response_model=ContaFixaResponse)
 def criar_conta_fixa(
     dados: ContaFixaCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
     nova_conta = ContaFixa(
+        usuario_id=usuario.id,
         nome=dados.nome.strip(),
         categoria=dados.categoria.strip() or "Conta",
         descricao=dados.descricao.strip() if dados.descricao else None,
@@ -115,11 +138,19 @@ def criar_conta_fixa(
         ativa=True
     )
 
-    db.add(nova_conta)
-    db.commit()
-    db.refresh(nova_conta)
+    try:
+        db.add(nova_conta)
+        db.commit()
+        db.refresh(nova_conta)
 
-    return nova_conta
+        return nova_conta
+
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao cadastrar conta fixa."
+        )
 
 
 # =====================================
@@ -129,14 +160,21 @@ def criar_conta_fixa(
 @router.get("", response_model=list[ContaFixaResponse])
 def listar_contas_fixas(
     incluir_inativas: bool = False,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
-    query = db.query(ContaFixa)
+    query = db.query(ContaFixa).filter(
+        ContaFixa.usuario_id == usuario.id
+    )
 
     if not incluir_inativas:
-        query = query.filter(ContaFixa.ativa.is_(True))
+        query = query.filter(
+            ContaFixa.ativa.is_(True)
+        )
 
-    return query.order_by(ContaFixa.nome.asc()).all()
+    return query.order_by(
+        ContaFixa.nome.asc()
+    ).all()
 
 
 # =====================================
@@ -147,17 +185,14 @@ def listar_contas_fixas(
 def editar_conta_fixa(
     conta_id: int,
     dados: ContaFixaCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
-    conta = db.query(ContaFixa).filter(
-        ContaFixa.id == conta_id
-    ).first()
-
-    if not conta:
-        raise HTTPException(
-            status_code=404,
-            detail="Conta fixa não encontrada."
-        )
+    conta = buscar_conta_usuario(
+        db,
+        conta_id,
+        usuario.id
+    )
 
     conta.nome = dados.nome.strip()
     conta.categoria = dados.categoria.strip() or "Conta"
@@ -166,10 +201,18 @@ def editar_conta_fixa(
     conta.valor_padrao = True
     conta.data_inicio = dados.data_inicio
 
-    db.commit()
-    db.refresh(conta)
+    try:
+        db.commit()
+        db.refresh(conta)
 
-    return conta
+        return conta
+
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao editar conta fixa."
+        )
 
 
 # =====================================
@@ -179,7 +222,8 @@ def editar_conta_fixa(
 @router.get("/mensais")
 def listar_contas_mensais(
     mes: str | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
     if mes is None:
         mes = date.today().strftime("%Y-%m")
@@ -193,6 +237,7 @@ def listar_contas_mensais(
     )
 
     contas_ativas = db.query(ContaFixa).filter(
+        ContaFixa.usuario_id == usuario.id,
         ContaFixa.ativa.is_(True),
         ContaFixa.data_inicio <= ultimo_dia_mes
     ).all()
@@ -214,19 +259,22 @@ def listar_contas_mensais(
         ContaFixa,
         ContaFixa.id == ContaMensal.conta_fixa_id
     ).filter(
+        ContaFixa.usuario_id == usuario.id,
         (
-            (ContaMensal.ano == ano)
-            & (ContaMensal.mes == numero_mes)
-        )
-        |
-        (
-            (ContaMensal.status == "pendente")
-            & (
-                (ContaMensal.ano < ano)
-                |
-                (
-                    (ContaMensal.ano == ano)
-                    & (ContaMensal.mes < numero_mes)
+            (
+                (ContaMensal.ano == ano)
+                & (ContaMensal.mes == numero_mes)
+            )
+            |
+            (
+                (ContaMensal.status == "pendente")
+                & (
+                    (ContaMensal.ano < ano)
+                    |
+                    (
+                        (ContaMensal.ano == ano)
+                        & (ContaMensal.mes < numero_mes)
+                    )
                 )
             )
         )
@@ -283,10 +331,17 @@ def listar_contas_mensais(
 def pagar_conta_mensal(
     conta_mensal_id: int,
     dados: ContaPagar,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
-    mensal = db.query(ContaMensal).filter(
-        ContaMensal.id == conta_mensal_id
+    mensal = db.query(
+        ContaMensal
+    ).join(
+        ContaFixa,
+        ContaFixa.id == ContaMensal.conta_fixa_id
+    ).filter(
+        ContaMensal.id == conta_mensal_id,
+        ContaFixa.usuario_id == usuario.id
     ).first()
 
     if not mensal:
@@ -301,20 +356,17 @@ def pagar_conta_mensal(
             detail="Essa conta já foi paga."
         )
 
-    conta = db.query(ContaFixa).filter(
-        ContaFixa.id == mensal.conta_fixa_id
-    ).first()
-
-    if not conta:
-        raise HTTPException(
-            status_code=404,
-            detail="Cadastro da conta fixa não encontrado."
-        )
+    conta = buscar_conta_usuario(
+        db,
+        mensal.conta_fixa_id,
+        usuario.id
+    )
 
     valor_centavos = converter_centavos(dados.valor_pago)
 
     try:
         nova_transacao = Transacao(
+            usuario_id=usuario.id,
             descricao=f"{conta.nome} (conta fixa)",
             tipo="despesa",
             categoria=conta.categoria,
@@ -342,7 +394,10 @@ def pagar_conta_mensal(
 
     except Exception:
         db.rollback()
-        raise
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao registrar pagamento da conta."
+        )
 
 
 # =====================================
@@ -353,17 +408,14 @@ def pagar_conta_mensal(
 def atualizar_conta_fixa(
     conta_id: int,
     dados: ContaFixaUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
-    conta = db.query(ContaFixa).filter(
-        ContaFixa.id == conta_id
-    ).first()
-
-    if not conta:
-        raise HTTPException(
-            status_code=404,
-            detail="Conta fixa não encontrada."
-        )
+    conta = buscar_conta_usuario(
+        db,
+        conta_id,
+        usuario.id
+    )
 
     if dados.nome is not None:
         conta.nome = dados.nome.strip()
@@ -375,19 +427,19 @@ def atualizar_conta_fixa(
         conta.descricao = dados.descricao.strip() or None
 
     if dados.valor is not None:
-        novo_valor_centavos = converter_centavos(dados.valor)
+        novo_valor_centavos = converter_centavos(
+            dados.valor
+        )
 
-        # Atualiza o valor padrão da conta fixa.
         conta.valor_centavos = novo_valor_centavos
 
-        # Atualiza todas as ocorrências que ainda estão pendentes.
-        # Contas já pagas permanecem com os valores originais.
         db.query(ContaMensal).filter(
             ContaMensal.conta_fixa_id == conta_id,
             ContaMensal.status == "pendente"
         ).update(
             {
-                ContaMensal.valor_previsto_centavos: novo_valor_centavos
+                ContaMensal.valor_previsto_centavos:
+                    novo_valor_centavos
             },
             synchronize_session=False
         )
@@ -416,32 +468,47 @@ def atualizar_conta_fixa(
 @router.delete("/{conta_id}")
 def excluir_conta_fixa(
     conta_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
-    conta = db.query(ContaFixa).filter(
-        ContaFixa.id == conta_id
-    ).first()
-
-    if not conta:
-        raise HTTPException(
-            status_code=404,
-            detail="Conta fixa não encontrada."
-        )
+    conta = buscar_conta_usuario(
+        db,
+        conta_id,
+        usuario.id
+    )
 
     try:
-        # Exclui as ocorrências mensais da conta.
+        mensais = db.query(ContaMensal).filter(
+            ContaMensal.conta_fixa_id == conta.id
+        ).all()
+
+        # Impede apagar transações que já foram geradas
+        # por pagamentos de contas fixas.
+        if any(m.transacao_id is not None for m in mensais):
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Esta conta possui pagamentos registrados. "
+                    "Não é possível excluí-la definitivamente."
+                )
+            )
+
         db.query(ContaMensal).filter(
-            ContaMensal.conta_fixa_id == conta_id
-        ).delete(synchronize_session=False)
+            ContaMensal.conta_fixa_id == conta.id
+        ).delete(
+            synchronize_session=False
+        )
 
-        # Exclui o cadastro principal.
         db.delete(conta)
-
         db.commit()
 
         return {
             "message": "Conta removida definitivamente."
         }
+
+    except HTTPException:
+        db.rollback()
+        raise
 
     except Exception:
         db.rollback()

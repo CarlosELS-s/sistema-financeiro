@@ -1,6 +1,34 @@
 
 const API_CONTAS = "/api/contas-fixas";
 
+// =====================================
+// AUTENTICAÇÃO
+// =====================================
+
+function obterTokenContas() {
+    return localStorage.getItem("access_token");
+}
+
+function encerrarSessaoContas() {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("usuario");
+    window.location.href = "/login";
+}
+
+function verificarAutenticacaoContas() {
+    if (!obterTokenContas()) {
+        window.location.href = "/login";
+        return false;
+    }
+
+    return true;
+}
+
+
+// =====================================
+// UTILITÁRIOS
+// =====================================
+
 function moedaConta(valor) {
     return Number(valor || 0).toLocaleString("pt-BR", {
         style: "currency",
@@ -28,18 +56,51 @@ function escaparConta(valor) {
     })[caractere]);
 }
 
+
+// =====================================
+// REQUISIÇÕES COM JWT
+// =====================================
+
 async function requisicaoContas(url, opcoes = {}) {
-    const resposta = await fetch(url, {
-        ...opcoes,
-        headers: {
-            "Content-Type": "application/json",
-            ...opcoes.headers
-        }
-    });
+    const token = obterTokenContas();
+
+    if (!token) {
+        throw new Error("Token não encontrado. Faça login novamente.");
+    }
+
+    const headers = new Headers(opcoes.headers || {});
+
+    headers.set("Authorization", `Bearer ${token}`);
+
+    if (
+        opcoes.body &&
+        !(opcoes.body instanceof FormData) &&
+        !headers.has("Content-Type")
+    ) {
+        headers.set("Content-Type", "application/json");
+    }
+
+    console.log("REQUISIÇÃO CONTAS:", url);
+    console.log("TOKEN ENCONTRADO:", Boolean(token));
+    console.log("AUTHORIZATION ENVIADO:", headers.has("Authorization"));
+
+    let resposta;
+
+    try {
+        resposta = await fetch(url, {
+            ...opcoes,
+            headers
+        });
+    } catch (erro) {
+        console.error("Erro de conexão:", erro);
+        throw new Error("Não foi possível conectar ao servidor.");
+    }
 
     const dados = await resposta.json().catch(() => ({}));
 
     if (!resposta.ok) {
+        console.error("Erro da API:", resposta.status, dados);
+
         throw new Error(
             typeof dados.detail === "string"
                 ? dados.detail
@@ -56,6 +117,8 @@ async function requisicaoContas(url, opcoes = {}) {
 // =====================================
 
 document.addEventListener("DOMContentLoaded", () => {
+    if (!verificarAutenticacaoContas()) return;
+
     const mes = document.getElementById("mesContasFixas");
     const formulario = document.getElementById("formContaFixa");
 
@@ -274,7 +337,7 @@ async function cadastrarContaFixa(evento) {
 
 
 // =====================================
-// EDITAR DIRETAMENTE NA PÁGINA
+// EDITAR CONTA
 // =====================================
 
 async function editarContaNaPagina(id) {

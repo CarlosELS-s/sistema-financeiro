@@ -1,0 +1,86 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Entrar | Meu Financeiro</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body class="auth-body">
+
+    <main class="auth-container">
+
+        <div class="auth-logo">
+            <div class="logo-icon">M</div>
+            <div>
+                <h2>Meu Financeiro</h2>
+                <span>Controle pessoal</span>
+            </div>
+        </div>
+
+        <section class="auth-card">
+
+            <div class="auth-heading">
+                <h1>Bem-vindo de volta!</h1>
+                <p>Entre na sua conta para acessar suas finanças.</p>
+            </div>
+
+            <form id="formLogin">
+
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <input
+                        type="email"
+                        id="email"
+                        placeholder="seu@email.com"
+                        maxlength="200"
+                        autocomplete="email"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="senha">Senha</label>
+                    <input
+                        type="password"
+                        id="senha"
+                        placeholder="Digite sua senha"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <button type="submit" id="btnLogin" class="btn-primary auth-button">
+                    Entrar
+                </button>
+
+                <p id="mensagemLogin" class="form-message"></p>
+
+            </form>
+
+            <div class="auth-footer">
+                Ainda não possui uma conta?
+                <a href="/cadastro">Criar conta</a>
+            </div>
+
+        </section>
+
+        <footer class="auth-copy">
+            Meu Financeiro © 2026
+        </footer>
+
+    </main>
+
+    <script src="/js/auth.js"></script>
+
+</body>
+</html>

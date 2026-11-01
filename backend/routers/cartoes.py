@@ -5,9 +5,11 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from database import get_db
 from models import (
+    Usuario,
     CartaoCredito,
     CompraCartao,
     FaturaCartao,
@@ -18,10 +20,9 @@ from schemas import (
     CartaoCreditoUpdate,
     CartaoCreditoResponse,
     CompraCartaoCreate,
-    CompraCartaoResponse,
-    FaturaCartaoResponse,
     FaturaCartaoPagar,
 )
+from auth import get_usuario_atual
 
 
 router = APIRouter(
@@ -29,6 +30,10 @@ router = APIRouter(
     tags=["Cartões de crédito"]
 )
 
+
+# =====================================
+# FUNÇÕES AUXILIARES
+# =====================================
 
 def para_centavos(valor: Decimal) -> int:
     return int(
@@ -44,38 +49,49 @@ def ultimo_dia(ano: int, mes: int) -> int:
 
 
 def data_segura(ano: int, mes: int, dia: int) -> date:
-    return date(ano, mes, min(dia, ultimo_dia(ano, mes)))
+    return date(
+        ano,
+        mes,
+        min(dia, ultimo_dia(ano, mes))
+    )
 
 
-def calcular_periodo(cartao: CartaoCredito, data_compra: date):
+def calcular_periodo(
+    cartao: CartaoCredito,
+    data_compra: date
+):
     """
-    Compras feitas até o dia de fechamento entram
-    na fatura que fecha naquele mês.
+    Antes do fechamento:
+        entra na fatura do mês atual.
 
-    Compras posteriores entram na próxima fatura.
+    No dia do fechamento ou depois:
+        entra na fatura do próximo mês.
+
+    O vencimento acontece no mês seguinte
+    ao mês da fatura.
     """
 
-    if data_compra.day <= cartao.dia_fechamento:
+    if data_compra.day < cartao.dia_fechamento:
         ano = data_compra.year
         mes = data_compra.month
     else:
-        if data_compra.month == 12:
-            ano = data_compra.year + 1
+        ano = data_compra.year
+        mes = data_compra.month + 1
+
+        if mes > 12:
             mes = 1
-        else:
-            ano = data_compra.year
-            mes = data_compra.month + 1
+            ano += 1
 
-    vencimento_mes = mes + 1
-    vencimento_ano = ano
+    ano_vencimento = ano
+    mes_vencimento = mes + 1
 
-    if vencimento_mes > 12:
-        vencimento_mes = 1
-        vencimento_ano += 1
+    if mes_vencimento > 12:
+        mes_vencimento = 1
+        ano_vencimento += 1
 
     vencimento = data_segura(
-        vencimento_ano,
-        vencimento_mes,
+        ano_vencimento,
+        mes_vencimento,
         cartao.dia_vencimento
     )
 
@@ -85,43 +101,65 @@ def calcular_periodo(cartao: CartaoCredito, data_compra: date):
 def obter_ou_criar_fatura(
     db: Session,
     cartao: CartaoCredito,
-    data_compra: date
+    ano: int,
+    mes: int
 ):
-    ano, mes, vencimento = calcular_periodo(
-        cartao,
-        data_compra
-    )
-
     fatura = db.query(FaturaCartao).filter(
         FaturaCartao.cartao_id == cartao.id,
         FaturaCartao.ano == ano,
         FaturaCartao.mes == mes
     ).first()
 
-    if not fatura:
-        fatura = FaturaCartao(
-            cartao_id=cartao.id,
-            ano=ano,
-            mes=mes,
-            vencimento=vencimento,
-            status="aberta"
-        )
+    if fatura:
+        return fatura
 
-        db.add(fatura)
-        db.flush()
+    ano_vencimento = ano
+    mes_vencimento = mes + 1
+
+    if mes_vencimento > 12:
+        mes_vencimento = 1
+        ano_vencimento += 1
+
+    vencimento = data_segura(
+        ano_vencimento,
+        mes_vencimento,
+        cartao.dia_vencimento
+    )
+
+    fatura = FaturaCartao(
+        cartao_id=cartao.id,
+        ano=ano,
+        mes=mes,
+        vencimento=vencimento,
+        status="aberta"
+    )
+
+    db.add(fatura)
+    db.flush()
 
     return fatura
 
 
-def total_fatura(db: Session, fatura_id: int) -> int:
-    compras = db.query(CompraCartao).filter(
-        CompraCartao.fatura_id == fatura_id
-    ).all()
+def total_fatura(
+    db: Session,
+    fatura_id: int
+) -> int:
+    return int(
+        db.query(
+            func.coalesce(
+                func.sum(CompraCartao.valor_centavos),
+                0
+            )
+        ).filter(
+            CompraCartao.fatura_id == fatura_id
+        ).scalar() or 0
+    )
 
-    return sum(compra.valor_centavos for compra in compras)
 
-
-def total_utilizado(db: Session, cartao_id: int) -> int:
+def total_utilizado(
+    db: Session,
+    cartao_id: int
+) -> int:
     faturas = db.query(FaturaCartao).filter(
         FaturaCartao.cartao_id == cartao_id,
         FaturaCartao.status != "paga"
@@ -133,18 +171,128 @@ def total_utilizado(db: Session, cartao_id: int) -> int:
     )
 
 
+def buscar_cartao_usuario(
+    db: Session,
+    cartao_id: int,
+    usuario_id: int,
+    exigir_ativo: bool = False
+):
+    consulta = db.query(CartaoCredito).filter(
+        CartaoCredito.id == cartao_id,
+        CartaoCredito.usuario_id == usuario_id
+    )
+
+    if exigir_ativo:
+        consulta = consulta.filter(
+            CartaoCredito.ativo == True
+        )
+
+    return consulta.first()
+
+
+# =====================================
+# REGISTRAR COMPRA PARCELADA
+# =====================================
+
+def registrar_compra_parcelada(
+    db: Session,
+    cartao: CartaoCredito,
+    descricao: str,
+    categoria: str,
+    valor_centavos: int,
+    data_compra: date,
+    parcelas: int
+):
+    if parcelas < 1 or parcelas > 60:
+        raise HTTPException(
+            400,
+            "A quantidade de parcelas deve estar entre 1 e 60."
+        )
+
+    utilizado = total_utilizado(
+        db,
+        cartao.id
+    )
+
+    if utilizado + valor_centavos > cartao.limite_centavos:
+        raise HTTPException(
+            400,
+            "Esta compra ultrapassa o limite disponível do cartão."
+        )
+
+    ano, mes, _ = calcular_periodo(
+        cartao,
+        data_compra
+    )
+
+    valor_base = valor_centavos // parcelas
+    resto = valor_centavos % parcelas
+
+    compras = []
+
+    for numero in range(1, parcelas + 1):
+
+        valor_parcela = valor_base
+
+        if numero <= resto:
+            valor_parcela += 1
+
+        fatura = obter_ou_criar_fatura(
+            db,
+            cartao,
+            ano,
+            mes
+        )
+
+        if fatura.status == "paga":
+            raise HTTPException(
+                400,
+                f"A fatura de {mes:02d}/{ano} já foi paga."
+            )
+
+        compra = CompraCartao(
+            fatura_id=fatura.id,
+            descricao=(
+                f"{descricao} ({numero}/{parcelas})"
+                if parcelas > 1
+                else descricao
+            ),
+            categoria=categoria,
+            valor_centavos=valor_parcela,
+            data=data_compra
+        )
+
+        db.add(compra)
+        compras.append(compra)
+
+        mes += 1
+
+        if mes > 12:
+            mes = 1
+            ano += 1
+
+    db.flush()
+
+    return compras
+
+
 # =====================================
 # CADASTRAR CARTÃO
 # =====================================
 
-@router.post("", response_model=CartaoCreditoResponse)
+@router.post(
+    "",
+    response_model=CartaoCreditoResponse
+)
 def criar_cartao(
     dados: CartaoCreditoCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
     cartao = CartaoCredito(
-        nome=dados.nome,
-        banco=dados.banco,
+        usuario_id=usuario.id,
+        nome=dados.nome.strip(),
+        banco=dados.banco.strip() if dados.banco else None,
         limite_centavos=para_centavos(dados.limite),
         dia_fechamento=dados.dia_fechamento,
         dia_vencimento=dados.dia_vencimento
@@ -162,15 +310,24 @@ def criar_cartao(
 # =====================================
 
 @router.get("")
-def listar_cartoes(db: Session = Depends(get_db)):
+def listar_cartoes(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
+):
     cartoes = db.query(CartaoCredito).filter(
+        CartaoCredito.usuario_id == usuario.id,
         CartaoCredito.ativo == True
+    ).order_by(
+        CartaoCredito.id.desc()
     ).all()
 
     resultado = []
 
     for cartao in cartoes:
-        utilizado = total_utilizado(db, cartao.id)
+        utilizado = total_utilizado(
+            db,
+            cartao.id
+        )
 
         resultado.append({
             "id": cartao.id,
@@ -193,24 +350,57 @@ def listar_cartoes(db: Session = Depends(get_db)):
 # EDITAR CARTÃO
 # =====================================
 
-@router.put("/{cartao_id}", response_model=CartaoCreditoResponse)
+@router.put(
+    "/{cartao_id}",
+    response_model=CartaoCreditoResponse
+)
 def atualizar_cartao(
     cartao_id: int,
     dados: CartaoCreditoUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
-    cartao = db.query(CartaoCredito).filter(
-        CartaoCredito.id == cartao_id
-    ).first()
+    cartao = buscar_cartao_usuario(
+        db,
+        cartao_id,
+        usuario.id,
+        exigir_ativo=True
+    )
 
     if not cartao:
-        raise HTTPException(404, "Cartão não encontrado.")
+        raise HTTPException(
+            404,
+            "Cartão não encontrado."
+        )
 
-    atualizacoes = dados.model_dump(exclude_unset=True)
+    atualizacoes = dados.model_dump(
+        exclude_unset=True
+    )
 
     for campo, valor in atualizacoes.items():
+
         if campo == "limite":
-            cartao.limite_centavos = para_centavos(valor)
+            novo_limite = para_centavos(valor)
+
+            utilizado = total_utilizado(
+                db,
+                cartao.id
+            )
+
+            if novo_limite < utilizado:
+                raise HTTPException(
+                    400,
+                    "O novo limite não pode ser menor que o valor já utilizado."
+                )
+
+            cartao.limite_centavos = novo_limite
+
+        elif campo == "nome":
+            cartao.nome = valor.strip()
+
+        elif campo == "banco":
+            cartao.banco = valor.strip() if valor else None
+
         else:
             setattr(cartao, campo, valor)
 
@@ -221,45 +411,35 @@ def atualizar_cartao(
 
 
 # =====================================
-# EXCLUIR CARTÃO
+# DESATIVAR CARTÃO
 # =====================================
 
 @router.delete("/{cartao_id}")
 def excluir_cartao(
     cartao_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
-    cartao = db.query(CartaoCredito).filter(
-        CartaoCredito.id == cartao_id
-    ).first()
+    cartao = buscar_cartao_usuario(
+        db,
+        cartao_id,
+        usuario.id,
+        exigir_ativo=True
+    )
 
     if not cartao:
-        raise HTTPException(404, "Cartão não encontrado.")
+        raise HTTPException(
+            404,
+            "Cartão não encontrado."
+        )
 
-    faturas = db.query(FaturaCartao).filter(
-        FaturaCartao.cartao_id == cartao_id
-    ).all()
+    cartao.ativo = False
 
-    for fatura in faturas:
-        if fatura.status == "paga":
-            raise HTTPException(
-                400,
-                "Não é possível excluir um cartão com faturas pagas."
-            )
-
-    for fatura in faturas:
-        db.query(CompraCartao).filter(
-            CompraCartao.fatura_id == fatura.id
-        ).delete(synchronize_session=False)
-
-    db.query(FaturaCartao).filter(
-        FaturaCartao.cartao_id == cartao_id
-    ).delete(synchronize_session=False)
-
-    db.delete(cartao)
     db.commit()
 
-    return {"mensagem": "Cartão excluído com sucesso."}
+    return {
+        "mensagem": "Cartão desativado. O histórico foi preservado."
+    }
 
 
 # =====================================
@@ -270,61 +450,46 @@ def excluir_cartao(
 def registrar_compra(
     cartao_id: int,
     dados: CompraCartaoCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
-    cartao = db.query(CartaoCredito).filter(
-        CartaoCredito.id == cartao_id,
-        CartaoCredito.ativo == True
-    ).first()
+    cartao = buscar_cartao_usuario(
+        db,
+        cartao_id,
+        usuario.id,
+        exigir_ativo=True
+    )
 
     if not cartao:
-        raise HTTPException(404, "Cartão não encontrado.")
-
-    fatura = obter_ou_criar_fatura(
-        db,
-        cartao,
-        dados.data
-    )
-
-    if fatura.status == "paga":
         raise HTTPException(
-            400,
-            "Esta fatura já foi paga."
+            404,
+            "Cartão não encontrado ou inativo."
         )
 
-    valor_centavos = para_centavos(dados.valor)
-
-    utilizado = total_utilizado(db, cartao.id)
-
-    if utilizado + valor_centavos > cartao.limite_centavos:
-        raise HTTPException(
-            400,
-            "Esta compra ultrapassa o limite disponível do cartão."
+    try:
+        compras = registrar_compra_parcelada(
+            db=db,
+            cartao=cartao,
+            descricao=dados.descricao.strip(),
+            categoria=dados.categoria.strip(),
+            valor_centavos=para_centavos(dados.valor),
+            data_compra=dados.data,
+            parcelas=dados.parcelas
         )
 
-    compra = CompraCartao(
-        fatura_id=fatura.id,
-        descricao=dados.descricao,
-        categoria=dados.categoria,
-        valor_centavos=valor_centavos,
-        data=dados.data
-    )
+        db.commit()
 
-    db.add(compra)
-    db.commit()
-    db.refresh(compra)
-
-    return {
-        "mensagem": "Compra registrada com sucesso.",
-        "compra": {
-            "id": compra.id,
-            "fatura_id": compra.fatura_id,
-            "descricao": compra.descricao,
-            "categoria": compra.categoria,
-            "valor_centavos": compra.valor_centavos,
-            "data": compra.data
+        return {
+            "mensagem": "Compra registrada com sucesso.",
+            "parcelas": len(compras),
+            "valor_total_centavos": para_centavos(
+                dados.valor
+            )
         }
-    }
+
+    except Exception:
+        db.rollback()
+        raise
 
 
 # =====================================
@@ -334,17 +499,23 @@ def registrar_compra(
 @router.get("/{cartao_id}/faturas")
 def listar_faturas(
     cartao_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
-    cartao = db.query(CartaoCredito).filter(
-        CartaoCredito.id == cartao_id
-    ).first()
+    cartao = buscar_cartao_usuario(
+        db,
+        cartao_id,
+        usuario.id
+    )
 
     if not cartao:
-        raise HTTPException(404, "Cartão não encontrado.")
+        raise HTTPException(
+            404,
+            "Cartão não encontrado."
+        )
 
     faturas = db.query(FaturaCartao).filter(
-        FaturaCartao.cartao_id == cartao_id
+        FaturaCartao.cartao_id == cartao.id
     ).order_by(
         FaturaCartao.ano.desc(),
         FaturaCartao.mes.desc()
@@ -353,9 +524,13 @@ def listar_faturas(
     resultado = []
 
     for fatura in faturas:
+
         compras = db.query(CompraCartao).filter(
             CompraCartao.fatura_id == fatura.id
-        ).order_by(CompraCartao.data.desc()).all()
+        ).order_by(
+            CompraCartao.data.desc(),
+            CompraCartao.id.desc()
+        ).all()
 
         resultado.append({
             "id": fatura.id,
@@ -364,7 +539,10 @@ def listar_faturas(
             "mes": fatura.mes,
             "vencimento": fatura.vencimento,
             "status": fatura.status,
-            "total_centavos": total_fatura(db, fatura.id),
+            "total_centavos": total_fatura(
+                db,
+                fatura.id
+            ),
             "transacao_id": fatura.transacao_id,
             "data_pagamento": fatura.data_pagamento,
             "compras": [
@@ -391,14 +569,25 @@ def listar_faturas(
 def pagar_fatura(
     fatura_id: int,
     dados: FaturaCartaoPagar,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
-    fatura = db.query(FaturaCartao).filter(
-        FaturaCartao.id == fatura_id
+    # A fatura só pode ser acessada se pertencer
+    # a um cartão do usuário autenticado.
+
+    fatura = db.query(FaturaCartao).join(
+        CartaoCredito,
+        CartaoCredito.id == FaturaCartao.cartao_id
+    ).filter(
+        FaturaCartao.id == fatura_id,
+        CartaoCredito.usuario_id == usuario.id
     ).first()
 
     if not fatura:
-        raise HTTPException(404, "Fatura não encontrada.")
+        raise HTTPException(
+            404,
+            "Fatura não encontrada."
+        )
 
     if fatura.status == "paga":
         raise HTTPException(
@@ -407,10 +596,20 @@ def pagar_fatura(
         )
 
     cartao = db.query(CartaoCredito).filter(
-        CartaoCredito.id == fatura.cartao_id
+        CartaoCredito.id == fatura.cartao_id,
+        CartaoCredito.usuario_id == usuario.id
     ).first()
 
-    total = total_fatura(db, fatura.id)
+    if not cartao:
+        raise HTTPException(
+            404,
+            "Cartão não encontrado."
+        )
+
+    total = total_fatura(
+        db,
+        fatura.id
+    )
 
     if total <= 0:
         raise HTTPException(
@@ -419,6 +618,7 @@ def pagar_fatura(
         )
 
     transacao = Transacao(
+        usuario_id=usuario.id,
         descricao=f"Fatura do cartão {cartao.nome}",
         tipo="despesa",
         categoria="Cartão de crédito",

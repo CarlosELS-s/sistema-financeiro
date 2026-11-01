@@ -7,8 +7,9 @@ from fastapi.responses import FileResponse
 
 from database import engine, Base
 
-# Importar os modelos para o SQLAlchemy reconhecer todas as tabelas
+# Importar todos os modelos
 from models import (
+    Usuario,
     Transacao,
     ContaFixa,
     ContaMensal,
@@ -17,14 +18,23 @@ from models import (
     CompraCartao,
 )
 
+# Importar routers
 from routers.transacoes import router as transacoes_router
 from routers.contas_fixas import router as contas_fixas_router
 from routers.cartoes import router as cartoes_router
+from routers.autenticacao import router as autenticacao_router
 
 
-# Criar tabelas que ainda não existem, preservando os dados atuais
+# =====================================
+# CRIAR TABELAS DO BANCO
+# =====================================
+
 Base.metadata.create_all(bind=engine)
 
+
+# =====================================
+# CONFIGURAÇÃO DA API
+# =====================================
 
 app = FastAPI(
     title="Sistema Financeiro",
@@ -40,10 +50,11 @@ app = FastAPI(
 app.include_router(transacoes_router)
 app.include_router(contas_fixas_router)
 app.include_router(cartoes_router)
+app.include_router(autenticacao_router)
 
 
 # =====================================
-# FRONTEND
+# CONFIGURAÇÃO DO FRONTEND
 # =====================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -62,19 +73,44 @@ app.mount(
     name="js"
 )
 
-@app.get("/cartoes")
+
+# =====================================
+# PÁGINAS
+# =====================================
+
+@app.get("/login", include_in_schema=False)
+def pagina_login():
+    return FileResponse(FRONTEND_DIR / "login.html")
+
+
+@app.get("/cadastro", include_in_schema=False)
+def pagina_cadastro():
+    return FileResponse(FRONTEND_DIR / "cadastro.html")
+
+
+@app.get("/", include_in_schema=False)
+def inicio():
+    return FileResponse(FRONTEND_DIR / "login.html")
+
+
+@app.get("/dashboard", include_in_schema=False)
+def pagina_dashboard():
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+
+@app.get("/cartoes", include_in_schema=False)
 def pagina_cartoes():
     return FileResponse(FRONTEND_DIR / "cartoes.html")
+
 
 @app.get("/contas-fixas", include_in_schema=False)
 def pagina_contas_fixas():
     return FileResponse(FRONTEND_DIR / "contas-fixas.html")
 
 
-@app.get("/", include_in_schema=False)
-def inicio():
-    return FileResponse(FRONTEND_DIR / "index.html")
-
+# =====================================
+# VERIFICAR API
+# =====================================
 
 @app.get("/api")
 def verificar_api():

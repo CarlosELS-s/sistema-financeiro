@@ -7,6 +7,36 @@ from pydantic import BaseModel, Field, ConfigDict
 
 
 # =====================================
+# USUÁRIOS E AUTENTICAÇÃO
+# =====================================
+
+class UsuarioCreate(BaseModel):
+    nome: str = Field(min_length=2, max_length=150)
+    email: str = Field(min_length=5, max_length=255)
+    senha: str = Field(min_length=8, max_length=128)
+
+
+class UsuarioLogin(BaseModel):
+    email: str = Field(min_length=5, max_length=255)
+    senha: str = Field(min_length=1, max_length=128)
+
+
+class UsuarioResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    nome: str
+    email: str
+    ativo: bool
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    usuario: UsuarioResponse
+
+
+# =====================================
 # TRANSAÇÕES
 # =====================================
 
@@ -22,6 +52,10 @@ class TransacaoCreate(BaseModel):
     )
 
     data: date
+
+    forma_pagamento: Literal["pix", "debito", "credito"] | None = None
+    cartao_id: int | None = Field(default=None, gt=0)
+    parcelas: int = Field(default=1, ge=1, le=60)
 
 
 class TransacaoResponse(BaseModel):
@@ -160,6 +194,7 @@ class CompraCartaoCreate(BaseModel):
     )
 
     data: date
+    parcelas: int = Field(default=1, ge=1, le=60)
 
 
 class CompraCartaoResponse(BaseModel):
@@ -187,7 +222,7 @@ class FaturaCartaoResponse(BaseModel):
     total_centavos: int
     transacao_id: int | None
     data_pagamento: date | None
-    compras: list[CompraCartaoResponse] = []
+    compras: list[CompraCartaoResponse] = Field(default_factory=list)
 
 
 # =====================================

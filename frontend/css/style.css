@@ -1,3 +1,4 @@
+
 :root {
     --background: #0b1120;
     --sidebar: #101827;
@@ -15,6 +16,10 @@
 
     --radius: 14px;
 }
+
+/* =====================================
+   CONFIGURAÇÕES GERAIS
+===================================== */
 
 * {
     margin: 0;
@@ -43,12 +48,18 @@ button {
     border: none;
 }
 
+[hidden] {
+    display: none !important;
+}
+
 .app {
     display: flex;
     min-height: 100vh;
 }
 
-/* SIDEBAR */
+/* =====================================
+   SIDEBAR
+===================================== */
 
 .sidebar {
     width: 255px;
@@ -183,7 +194,55 @@ button {
     margin-top: 4px;
 }
 
-/* CONTEÚDO */
+/* =====================================
+   BOTÃO SAIR
+===================================== */
+
+.btn-sair {
+    width: calc(100% - 24px);
+    min-height: 48px;
+    margin: 20px 12px 12px;
+    padding: 0 16px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    background: linear-gradient(
+        135deg,
+        rgba(239, 68, 68, 0.13),
+        rgba(185, 28, 28, 0.08)
+    );
+
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.22);
+    border-radius: 12px;
+
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-sair:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: #ffffff;
+    border-color: #ef4444;
+
+    transform: translateY(-2px);
+    box-shadow: 0 7px 20px rgba(220, 38, 38, 0.22);
+}
+
+.btn-sair:active {
+    transform: scale(0.97);
+}
+
+/* =====================================
+   CONTEÚDO PRINCIPAL
+===================================== */
 
 .main-content {
     margin-left: 255px;
@@ -229,7 +288,9 @@ button {
     outline: none;
 }
 
-/* BOTÕES */
+/* =====================================
+   BOTÕES GERAIS
+===================================== */
 
 .btn-primary {
     background: var(--green);
@@ -260,7 +321,9 @@ button {
     font-weight: 600;
 }
 
-/* SEÇÕES */
+/* =====================================
+   SEÇÕES
+===================================== */
 
 .section-heading {
     margin-bottom: 20px;
@@ -270,7 +333,9 @@ button {
     font-size: 17px;
 }
 
-/* CARDS */
+/* =====================================
+   CARDS
+===================================== */
 
 .cards {
     display: grid;
@@ -354,7 +419,9 @@ button {
     border-color: #225d40;
 }
 
-/* PAINÉIS */
+/* =====================================
+   PAINÉIS E GRÁFICOS
+===================================== */
 
 .charts-grid {
     display: grid;
@@ -426,7 +493,7 @@ button {
     background: var(--red);
 }
 
-/* CATEGORIAS */
+/* GRÁFICO DE CATEGORIAS */
 
 .category-chart {
     display: flex;
@@ -443,9 +510,7 @@ button {
 
     border-radius: 50%;
 
-    background: conic-gradient(
-        #263247 0deg 360deg
-    );
+    background: conic-gradient(#263247 0deg 360deg);
 
     display: flex;
     align-items: center;
@@ -506,7 +571,9 @@ button {
     flex-shrink: 0;
 }
 
-/* FORMULÁRIO */
+/* =====================================
+   FORMULÁRIOS GERAIS
+===================================== */
 
 .form-panel {
     margin-top: 25px;
@@ -574,7 +641,9 @@ button {
     color: var(--red);
 }
 
-/* TABELA */
+/* =====================================
+   TABELAS E TRANSAÇÕES
+===================================== */
 
 .transactions-panel {
     margin-top: 25px;
@@ -671,123 +740,9 @@ tbody tr:hover {
     padding: 35px;
 }
 
-/* RODAPÉ */
-
-footer {
-    text-align: center;
-    color: var(--muted);
-    font-size: 11px;
-    padding: 20px;
-}
-
-/* RESPONSIVIDADE */
-
-@media (max-width: 1150px) {
-
-    .cards {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .charts-grid {
-        grid-template-columns: 1fr;
-    }
-
-}
-
-@media (max-width: 800px) {
-
-    .sidebar {
-        width: 75px;
-        padding: 20px 10px;
-    }
-
-    .logo {
-        justify-content: center;
-        padding: 0;
-    }
-
-    .logo > div:last-child,
-    .menu-title,
-    .menu-item:not(.active),
-    .menu-item.active {
-        font-size: 0;
-    }
-
-    .menu-item {
-        justify-content: center;
-        padding: 14px 5px;
-    }
-
-    .menu-item span {
-        font-size: 21px;
-    }
-
-    .user-card {
-        justify-content: center;
-    }
-
-    .user-card > div:last-child {
-        display: none;
-    }
-
-    .main-content {
-        margin-left: 75px;
-        width: calc(100% - 75px);
-        padding: 25px 18px;
-    }
-
-    .topbar {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .topbar-actions {
-        width: 100%;
-        flex-wrap: wrap;
-    }
-
-    .form-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-}
-
-@media (max-width: 520px) {
-
-    .cards {
-        grid-template-columns: 1fr;
-    }
-
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .main-content {
-        padding: 20px 12px;
-    }
-
-    .panel {
-        padding: 16px;
-    }
-
-    .topbar h1 {
-        font-size: 22px;
-    }
-
-    .topbar-actions > * {
-        flex: 1;
-    }
-
-    .category-chart {
-        flex-direction: column;
-    }
-
-    .legend {
-        width: 100%;
-    }
-
-}
-/* BOTÕES DE PLANILHA */
+/* =====================================
+   PLANILHAS
+===================================== */
 
 .transaction-actions {
     display: flex;
@@ -822,19 +777,6 @@ footer {
 .btn-import:hover {
     background: #1d4ed8;
     color: white;
-}
-
-@media (max-width: 600px) {
-
-    .transaction-actions {
-        width: 100%;
-    }
-
-    .transaction-actions button,
-    .transaction-actions select {
-        flex: 1;
-    }
-
 }
 
 /* =====================================
@@ -927,11 +869,6 @@ footer {
     font-size: 11px;
 }
 
-@media (max-width: 700px) {
-    .contas-resumo {
-        grid-template-columns: 1fr;
-    }
-}
 .acoes-conta {
     display: flex;
     align-items: center;
@@ -960,9 +897,7 @@ footer {
     color: var(--red);
 }
 
-/* =====================================
-   EDITOR DE CONTA NA PRÓPRIA PÁGINA
-===================================== */
+/* EDITOR DE CONTA */
 
 .editor-conta {
     padding: 18px;
@@ -1011,12 +946,427 @@ footer {
     color: inherit;
 }
 
-@media (max-width: 650px) {
+/* =====================================
+   LOGIN E CADASTRO
+===================================== */
+
+.auth-body {
+    min-height: 100vh;
+    margin: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 24px;
+    box-sizing: border-box;
+
+    background:
+        radial-gradient(
+            circle at 15% 20%,
+            rgba(34, 197, 94, 0.13),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 85% 80%,
+            rgba(59, 130, 246, 0.12),
+            transparent 35%
+        ),
+        #080e1a;
+
+    font-family: Arial, sans-serif;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 430px;
+}
+
+.auth-card {
+    width: 100%;
+    box-sizing: border-box;
+
+    padding: 42px 36px;
+
+    background: rgba(21, 31, 48, 0.96);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 22px;
+
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(15px);
+
+    animation: aparecerLogin 0.5s ease;
+}
+
+@keyframes aparecerLogin {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* LOGO DA TELA DE LOGIN - CORRIGIDO */
+
+.auth-logo {
+    width: 100%;
+    height: auto;
+
+    margin: 0 auto 24px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+
+    border-radius: 0;
+    background: transparent;
+    color: var(--text);
+
+    font-size: inherit;
+    font-weight: normal;
+
+    box-shadow: none;
+}
+
+.auth-logo .logo-icon {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--green);
+    color: #07140b;
+
+    font-size: 23px;
+    font-weight: 800;
+
+    border-radius: 13px;
+}
+
+.auth-logo h2 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 20px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.auth-logo span {
+    display: block;
+    margin-top: 4px;
+
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+/* TÍTULO DO LOGIN */
+
+.auth-heading {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.auth-heading h1 {
+    margin: 0 0 10px;
+
+    color: #f8fafc;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+}
+
+.auth-heading p {
+    margin: 0;
+
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* FORMULÁRIO DE LOGIN */
+
+.auth-card form {
+    display: flex;
+    flex-direction: column;
+    gap: 19px;
+}
+
+.auth-card .form-group {
+    margin-bottom: 21px;
+}
+
+.auth-card label {
+    display: block;
+    margin-bottom: 9px;
+
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.auth-card input {
+    width: 100%;
+    height: 49px;
+
+    box-sizing: border-box;
+    padding: 0 15px;
+
+    color: #f8fafc;
+    background: #0d1727;
+
+    border: 1px solid #29374b;
+    border-radius: 11px;
+
+    outline: none;
+    font-size: 14px;
+
+    transition: 0.25s;
+}
+
+.auth-card input::placeholder {
+    color: #64748b;
+}
+
+.auth-card input:focus {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.13);
+}
+
+/* BOTÃO DE LOGIN */
+
+.auth-button {
+    width: 100%;
+    min-height: 50px;
+
+    margin-top: 10px;
+
+    border: none;
+    border-radius: 11px;
+
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #052e16;
+
+    font-size: 15px;
+    font-weight: 800;
+
+    cursor: pointer;
+    transition: 0.25s;
+}
+
+.auth-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 9px 25px rgba(34, 197, 94, 0.22);
+    filter: brightness(1.08);
+}
+
+.auth-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* RODAPÉ DO LOGIN */
+
+.auth-footer {
+    margin-top: 25px;
+
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.auth-footer a {
+    color: #22c55e;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+.auth-copy {
+    margin-top: 25px;
+
+    color: #64748b;
+    text-align: center;
+    font-size: 11px;
+}
+
+/* =====================================
+   RODAPÉ
+===================================== */
+
+footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+    padding: 20px;
+}
+
+/* =====================================
+   RESPONSIVIDADE
+===================================== */
+
+@media (max-width: 1150px) {
+    .cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 800px) {
+    .sidebar {
+        width: 75px;
+        padding: 20px 10px;
+    }
+
+    .logo {
+        justify-content: center;
+        padding: 0;
+    }
+
+    .logo > div:last-child,
+    .menu-title,
+    .menu-item:not(.active),
+    .menu-item.active {
+        font-size: 0;
+    }
+
+    .menu-item {
+        justify-content: center;
+        padding: 14px 5px;
+    }
+
+    .menu-item span {
+        font-size: 21px;
+    }
+
+    .user-card {
+        justify-content: center;
+    }
+
+    .user-card > div:last-child {
+        display: none;
+    }
+
+    .btn-sair {
+        width: 48px;
+        min-width: 48px;
+        margin: 15px auto 0;
+        padding: 0;
+        font-size: 0;
+    }
+
+    .btn-sair .sair-icon {
+        font-size: 20px;
+    }
+
+    .main-content {
+        margin-left: 75px;
+        width: calc(100% - 75px);
+        padding: 25px 18px;
+    }
+
+    .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .topbar-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+    .contas-resumo {
+        grid-template-columns: 1fr;
+    }
+
     .editor-conta-grid {
         grid-template-columns: 1fr;
     }
 
     .acoes-editor-conta {
         flex-direction: column;
+    }
+}
+
+@media (max-width: 600px) {
+    .transaction-actions {
+        width: 100%;
+    }
+
+    .transaction-actions button,
+    .transaction-actions select {
+        flex: 1;
+    }
+}
+
+@media (max-width: 520px) {
+    .cards {
+        grid-template-columns: 1fr;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .main-content {
+        padding: 20px 12px;
+    }
+
+    .panel {
+        padding: 16px;
+    }
+
+    .topbar h1 {
+        font-size: 22px;
+    }
+
+    .topbar-actions > * {
+        flex: 1;
+    }
+
+    .category-chart {
+        flex-direction: column;
+    }
+
+    .legend {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-body {
+        padding: 16px;
+    }
+
+    .auth-card {
+        padding: 32px 23px;
+    }
+
+    .auth-heading h1 {
+        font-size: 25px;
+    }
+
+    .auth-logo h2 {
+        font-size: 18px;
     }
 }
