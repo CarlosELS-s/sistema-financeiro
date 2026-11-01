@@ -790,41 +790,76 @@ def dashboard(
 # EXPORTAR EXCEL
 # =====================================
 
-
 @router.get("/planilhas/exportar")
 def exportar_excel(
     mes: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
 ):
     # Validar mês selecionado
-    try:
-        ano, numero_mes = map(int, mes.split("-"))
+    ano, numero_mes = validar_mes(mes)
+    inicio, fim = periodo_mes(ano, numero_mes)
 
-        if not 1 <= numero_mes <= 12:
-            raise ValueError()
+    # Evitar contabilizar o pagamento da fatura
+    # novamente como uma despesa.
+    pagamentos_faturas = subquery_pagamentos_usuario(
+        usuario.id,
+        db
+    )
 
-        inicio = date(ano, numero_mes, 1)
-
-        if numero_mes == 12:
-            fim = date(ano + 1, 1, 1)
-        else:
-            fim = date(ano, numero_mes + 1, 1)
-
-    except ValueError:
-        raise HTTPException(
-            status_code=400,
-            detail="Mês inválido. Utilize YYYY-MM."
-        )
-
-    # Buscar somente as transações do mês selecionado
+    # Buscar transações normais do usuário no mês.
     transacoes = db.query(Transacao).filter(
+        Transacao.usuario_id == usuario.id,
         Transacao.data >= inicio,
-        Transacao.data < fim
-    ).order_by(
-        Transacao.data.asc(),
-        Transacao.id.asc()
+        Transacao.data < fim,
+        ~Transacao.id.in_(pagamentos_faturas)
     ).all()
 
+    # Buscar parcelas das faturas do mês selecionado.
+    parcelas = db.query(
+        CompraCartao,
+        FaturaCartao
+    ).join(
+        FaturaCartao,
+        CompraCartao.fatura_id == FaturaCartao.id
+    ).join(
+        CartaoCredito,
+        FaturaCartao.cartao_id == CartaoCredito.id
+    ).filter(
+        CartaoCredito.usuario_id == usuario.id,
+        FaturaCartao.ano == ano,
+        FaturaCartao.mes == numero_mes
+    ).all()
+
+    # Criar lista única de movimentações.
+    movimentacoes = []
+
+    for t in transacoes:
+        movimentacoes.append({
+            "descricao": t.descricao,
+            "tipo": t.tipo,
+            "categoria": t.categoria or "Outros",
+            "valor": t.valor_centavos / 100,
+            "data": t.data,
+            "origem": "Transação"
+        })
+
+    for compra, fatura in parcelas:
+        movimentacoes.append({
+            "descricao": compra.descricao,
+            "tipo": "despesa",
+            "categoria": compra.categoria or "Outros",
+            "valor": compra.valor_centavos / 100,
+            "data": compra.data,
+            "origem": "Cartão de crédito"
+        })
+
+    # Ordenar por data.
+    movimentacoes.sort(
+        key=lambda item: item["data"]
+    )
+
+    # Criar arquivo Excel.
     arquivo = Workbook()
     planilha = arquivo.active
     planilha.title = "Movimentações"
@@ -834,54 +869,82 @@ def exportar_excel(
         "Tipo",
         "Categoria",
         "Valor",
-        "Data"
+        "Data",
+        "Origem"
     ]
 
     planilha.append(cabecalho)
 
+    # Estilizar cabeçalho.
     for celula in planilha[1]:
-        celula.font = Font(bold=True, color="FFFFFF")
+        celula.font = Font(
+            bold=True,
+            color="FFFFFF"
+        )
+
         celula.fill = PatternFill(
             fill_type="solid",
             fgColor="166534"
         )
-        celula.alignment = Alignment(horizontal="center")
 
-    for t in transacoes:
+        celula.alignment = Alignment(
+            horizontal="center"
+        )
+
+    # Inserir movimentações.
+    for movimento in movimentacoes:
         planilha.append([
-            t.descricao,
-            t.tipo,
-            t.categoria,
-            t.valor_centavos / 100,
-            t.data
+            movimento["descricao"],
+            movimento["tipo"],
+            movimento["categoria"],
+            movimento["valor"],
+            movimento["data"],
+            movimento["origem"]
         ])
 
+    # Formatação.
     planilha.freeze_panes = "A2"
     planilha.auto_filter.ref = planilha.dimensions
 
-    planilha.column_dimensions["A"].width = 30
-    planilha.column_dimensions["B"].width = 15
-    planilha.column_dimensions["C"].width = 22
-    planilha.column_dimensions["D"].width = 18
-    planilha.column_dimensions["E"].width = 18
+    larguras = {
+        "A": 35,
+        "B": 15,
+        "C": 22,
+        "D": 18,
+        "E": 18,
+        "F": 22
+    }
+
+    for coluna, largura in larguras.items():
+        planilha.column_dimensions[coluna].width = largura
 
     for linha in range(2, planilha.max_row + 1):
-        planilha.cell(linha, 4).number_format = '"R$" #,##0.00'
-        planilha.cell(linha, 5).number_format = "DD/MM/YYYY"
+        planilha.cell(
+            linha,
+            4
+        ).number_format = '"R$" #,##0.00'
 
+        planilha.cell(
+            linha,
+            5
+        ).number_format = "DD/MM/YYYY"
+
+    # Preparar download.
     buffer = BytesIO()
     arquivo.save(buffer)
     buffer.seek(0)
 
     return StreamingResponse(
         buffer,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        media_type=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        ),
         headers={
             "Content-Disposition":
             f'attachment; filename="movimentacoes_{mes}.xlsx"'
         }
     )
-
 
 # =====================================
 # IMPORTAR EXCEL
