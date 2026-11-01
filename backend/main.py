@@ -78,9 +78,9 @@ app.mount(
 # =====================================
 # PÁGINAS
 # =====================================
-@app.get("/favicon.png", include_in_schema=False)
+@app.get("/favicon1.png", include_in_schema=False)
 def favicon():
-    return FileResponse(FRONTEND_DIR / "favicon.png")
+    return FileResponse(FRONTEND_DIR / "favicon1.png")
 
 @app.get("/login", include_in_schema=False)
 def pagina_login():
