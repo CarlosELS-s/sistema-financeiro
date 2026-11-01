@@ -7,3 +7,4 @@ openpyxl
 python-multipart
 PyJWT
 pwdlib[argon2]
+psycopg2-binary
