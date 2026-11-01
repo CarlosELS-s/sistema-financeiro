@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -8,8 +9,10 @@
 
     <link rel="stylesheet" href="/css/style.css">
     <link rel="icon" type="image/png" href="/favicon1.png">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
@@ -17,7 +20,9 @@
 
 <div class="app">
 
-    <aside class="sidebar">
+    <!-- MENU LATERAL -->
+
+    <aside class="sidebar" id="sidebar">
 
         <div class="logo">
             <div class="logo-icon">
@@ -66,6 +71,8 @@
 
         </nav>
 
+        <!-- USUÁRIO E SAÍDA -->
+
         <div class="sidebar-bottom">
 
             <div class="user-card">
@@ -92,7 +99,30 @@
 
     </aside>
 
+    <!-- FUNDO ESCURO DO MENU MOBILE -->
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+
     <main class="main-content">
+
+        <!-- BOTÃO DE TRÊS BARRINHAS -->
+
+        <button
+            type="button"
+            class="mobile-menu-button"
+            id="mobileMenuButton"
+            aria-label="Abrir menu"
+            aria-expanded="false"
+            aria-controls="sidebar"
+        >
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <!-- CABEÇALHO -->
 
         <header class="topbar">
 
@@ -260,14 +290,12 @@
                 <table>
 
                     <thead>
-
                         <tr>
                             <th>Conta</th>
                             <th>Valor</th>
                             <th>Situação</th>
                             <th>Ações</th>
                         </tr>
-
                     </thead>
 
                     <tbody id="tabelaContasFixas">
@@ -294,8 +322,68 @@
 
 </div>
 
+<!-- JAVASCRIPT -->
+
 <script src="/js/sidebar.js"></script>
 <script src="/js/contas.js"></script>
+
+<!-- CONTROLE DO MENU MOBILE -->
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const botao = document.getElementById("mobileMenuButton");
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+
+    if (!botao || !sidebar || !overlay) return;
+
+    function abrirMenu() {
+        sidebar.classList.add("sidebar-open");
+        overlay.classList.add("overlay-visible");
+        document.body.classList.add("menu-open");
+
+        botao.setAttribute("aria-expanded", "true");
+        botao.setAttribute("aria-label", "Fechar menu");
+    }
+
+    function fecharMenu() {
+        sidebar.classList.remove("sidebar-open");
+        overlay.classList.remove("overlay-visible");
+        document.body.classList.remove("menu-open");
+
+        botao.setAttribute("aria-expanded", "false");
+        botao.setAttribute("aria-label", "Abrir menu");
+    }
+
+    botao.addEventListener("click", () => {
+        if (sidebar.classList.contains("sidebar-open")) {
+            fecharMenu();
+        } else {
+            abrirMenu();
+        }
+    });
+
+    overlay.addEventListener("click", fecharMenu);
+
+    sidebar.querySelectorAll(".menu-item").forEach(link => {
+        link.addEventListener("click", fecharMenu);
+    });
+
+    document.addEventListener("keydown", evento => {
+        if (evento.key === "Escape") {
+            fecharMenu();
+        }
+    });
+
+    window.addEventListener("resize", () => {
+        if (window.innerWidth > 800) {
+            fecharMenu();
+        }
+    });
+
+});
+</script>
 
 </body>
 </html>
