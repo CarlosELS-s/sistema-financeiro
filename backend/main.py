@@ -122,3 +122,4 @@ def verificar_api():
         "status": "online",
         "mensagem": "Sistema Financeiro funcionando!"
     }
+#python -m uvicorn main:app --reload
