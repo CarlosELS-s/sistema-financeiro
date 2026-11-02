@@ -2,6 +2,10 @@
 import os
 import secrets
 import smtplib
+import base64
+
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
@@ -83,12 +87,19 @@ def normalizar_data(data):
 
 def enviar_codigo_email(destinatario: str, codigo: str):
     remetente = os.getenv("EMAIL_REMETENTE")
-    senha_app = os.getenv("EMAIL_SENHA_APP")
+    client_id = os.getenv("GMAIL_CLIENT_ID")
+    client_secret = os.getenv("GMAIL_CLIENT_SECRET")
+    refresh_token = os.getenv("GMAIL_REFRESH_TOKEN")
 
-    if not remetente or not senha_app:
+    if not all([
+        remetente,
+        client_id,
+        client_secret,
+        refresh_token
+    ]):
         raise HTTPException(
             status_code=500,
-            detail="Configuração de email não encontrada."
+            detail="Configuração da API do Gmail incompleta."
         )
 
     mensagem = EmailMessage()
@@ -96,7 +107,6 @@ def enviar_codigo_email(destinatario: str, codigo: str):
     mensagem["From"] = remetente
     mensagem["To"] = destinatario
 
-    # Versão em texto simples
     mensagem.set_content(
         f"""
 Olá!
@@ -113,7 +123,6 @@ Equipe Financeiro
         """
     )
 
-    # Versão HTML
     mensagem.add_alternative(
         f"""
         <!DOCTYPE html>
@@ -131,7 +140,6 @@ Equipe Financeiro
             font-family: Arial, Helvetica, sans-serif;
             color: #ffffff;
         ">
-
             <div style="
                 max-width: 480px;
                 margin: 0 auto;
@@ -140,7 +148,6 @@ Equipe Financeiro
                 border-radius: 16px;
                 overflow: hidden;
             ">
-
                 <div style="
                     padding: 28px 25px;
                     text-align: center;
@@ -161,7 +168,6 @@ Equipe Financeiro
                 </div>
 
                 <div style="padding: 32px 28px;">
-
                     <h1 style="
                         margin: 0 0 15px;
                         font-size: 23px;
@@ -238,7 +244,6 @@ Equipe Financeiro
                             Sua conta continuará protegida.
                         </p>
                     </div>
-
                 </div>
 
                 <div style="
@@ -254,9 +259,7 @@ Equipe Financeiro
                         © Financeiro — Sistema de controle financeiro
                     </p>
                 </div>
-
             </div>
-
         </body>
         </html>
         """,
@@ -264,25 +267,48 @@ Equipe Financeiro
     )
 
     try:
-        with smtplib.SMTP_SSL(
-            "smtp.gmail.com",
-            465,
-            timeout=30
-        ) as smtp:
+        credenciais = Credentials(
+            token=None,
+            refresh_token=refresh_token,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=client_id,
+            client_secret=client_secret,
+            scopes=[
+                "https://www.googleapis.com/auth/gmail.send"
+            ]
+        )
 
-            smtp.login(remetente, senha_app)
-            smtp.send_message(mensagem)
+        servico = build(
+            "gmail",
+            "v1",
+            credentials=credenciais,
+            cache_discovery=False
+        )
+
+        mensagem_codificada = base64.urlsafe_b64encode(
+            mensagem.as_bytes()
+        ).decode("utf-8")
+
+        resultado = servico.users().messages().send(
+            userId="me",
+            body={
+                "raw": mensagem_codificada
+            }
+        ).execute()
+
+        print(
+            f"[EMAIL] Enviado pela API do Gmail. ID: {resultado.get('id')}"
+        )
 
     except Exception as erro:
         print(
-            f"[EMAIL] Erro: {type(erro).__name__}: {erro}"
+            f"[EMAIL] Erro na API: {type(erro).__name__}: {erro}"
         )
 
         raise HTTPException(
             status_code=500,
             detail="Não foi possível enviar o email."
         )
-
 
 def validar_codigo(
     usuario: Usuario,

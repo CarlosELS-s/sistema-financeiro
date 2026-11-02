@@ -74,3 +74,4 @@ coverage/
 # =====================================
 
 movimentacoes_*.xlsx
+credentials.json
