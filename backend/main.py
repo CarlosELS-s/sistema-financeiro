@@ -61,6 +61,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 
 
+
 app.mount(
     "/css",
     StaticFiles(directory=FRONTEND_DIR / "css"),
@@ -77,9 +78,14 @@ app.mount(
 # =====================================
 # PÁGINAS
 # =====================================
+
 @app.get("/recuperar-senha", include_in_schema=False)
 def pagina_recuperar_senha():
     return FileResponse(FRONTEND_DIR / "recuperar-senha.html")
+
+@app.get("/favicon1.png", include_in_schema=False)
+def favicon():
+    return FileResponse(FRONTEND_DIR / "favicon1.png")
 
 @app.get("/login", include_in_schema=False)
 def pagina_login():
@@ -121,3 +127,6 @@ def verificar_api():
         "status": "online",
         "mensagem": "Sistema Financeiro funcionando!"
     }
+#python -m uvicorn main:app --reload
+#aaaaa
+#adaddklajkl

@@ -9,9 +9,11 @@
     <title>Recuperar senha | Meu Financeiro</title>
 
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/png" href="/favicon1.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
@@ -19,17 +21,23 @@
 
     <main class="auth-container">
 
+        <!-- LOGOTIPO -->
         <div class="auth-logo">
-            <div class="logo-icon">M</div>
+
+            <div class="logo-icon">
+                <img src="/favicon1.png" alt="Meu Financeiro">
+            </div>
+
             <div>
                 <h2>Meu Financeiro</h2>
                 <span>Controle pessoal</span>
             </div>
+
         </div>
 
         <section class="auth-card">
 
-            <!-- ETAPA 1 -->
+            <!-- ETAPA 1: EMAIL -->
             <div id="etapaEmail">
 
                 <div class="auth-heading">
@@ -41,6 +49,7 @@
 
                     <div class="form-group">
                         <label for="emailRecuperacao">E-mail</label>
+
                         <input
                             type="email"
                             id="emailRecuperacao"
@@ -51,17 +60,22 @@
                         >
                     </div>
 
-                    <button type="submit" id="btnEnviarCodigo"
-                        class="btn-primary auth-button">
+                    <button
+                        type="submit"
+                        id="btnEnviarCodigo"
+                        class="btn-primary auth-button"
+                    >
                         Enviar código
                     </button>
 
                     <p id="mensagemRecuperacao" class="form-message"></p>
 
                 </form>
+
             </div>
 
-            <!-- ETAPA 2 -->
+
+            <!-- ETAPA 2: CÓDIGO -->
             <div id="etapaCodigo" hidden>
 
                 <div class="auth-heading">
@@ -72,7 +86,8 @@
                 <form id="formCodigo">
 
                     <div class="form-group">
-                        <label for="codigoRecuperacao">Código</label>
+                        <label for="codigoRecuperacao">Código de recuperação</label>
+
                         <input
                             type="text"
                             id="codigoRecuperacao"
@@ -85,32 +100,38 @@
                         >
                     </div>
 
-                    <button type="submit" id="btnVerificarCodigo"
-                        class="btn-primary auth-button">
+                    <button
+                        type="submit"
+                        id="btnVerificarCodigo"
+                        class="btn-primary auth-button"
+                    >
                         Verificar código
                     </button>
 
                     <p id="mensagemCodigo" class="form-message"></p>
 
                 </form>
+
             </div>
 
-            <!-- ETAPA 3 -->
+
+            <!-- ETAPA 3: NOVA SENHA -->
             <div id="etapaNovaSenha" hidden>
 
                 <div class="auth-heading">
                     <h1>Nova senha</h1>
-                    <p>Crie uma nova senha para sua conta.</p>
+                    <p>Crie uma nova senha para acessar sua conta.</p>
                 </div>
 
                 <form id="formNovaSenha">
 
                     <div class="form-group">
                         <label for="novaSenha">Nova senha</label>
+
                         <input
                             type="password"
                             id="novaSenha"
-                            placeholder="Mínimo de 8 caracteres"
+                            placeholder="Digite sua nova senha"
                             minlength="8"
                             maxlength="128"
                             autocomplete="new-password"
@@ -120,6 +141,7 @@
 
                     <div class="form-group">
                         <label for="confirmarSenha">Confirmar senha</label>
+
                         <input
                             type="password"
                             id="confirmarSenha"
@@ -131,16 +153,22 @@
                         >
                     </div>
 
-                    <button type="submit" id="btnRedefinirSenha"
-                        class="btn-primary auth-button">
+                    <button
+                        type="submit"
+                        id="btnRedefinirSenha"
+                        class="btn-primary auth-button"
+                    >
                         Redefinir senha
                     </button>
 
                     <p id="mensagemNovaSenha" class="form-message"></p>
 
                 </form>
+
             </div>
 
+
+            <!-- VOLTAR AO LOGIN -->
             <div class="auth-footer">
                 <a href="/login">Voltar para o login</a>
             </div>

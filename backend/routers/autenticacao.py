@@ -92,13 +92,175 @@ def enviar_codigo_email(destinatario: str, codigo: str):
         )
 
     mensagem = EmailMessage()
-    mensagem["Subject"] = "Recuperação de senha"
+    mensagem["Subject"] = "Recuperação de senha | Financeiro"
     mensagem["From"] = remetente
     mensagem["To"] = destinatario
 
+    # Versão em texto simples
     mensagem.set_content(
-        f"Seu código de recuperação é: {codigo}\n"
-        "Ele é válido por 10 minutos."
+        f"""
+Olá!
+
+Recebemos uma solicitação para recuperar sua senha.
+
+Seu código de verificação é: {codigo}
+
+Esse código é válido por 10 minutos.
+
+Se você não solicitou essa alteração, ignore este email.
+
+Equipe Financeiro
+        """
+    )
+
+    # Versão HTML
+    mensagem.add_alternative(
+        f"""
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Recuperação de senha</title>
+        </head>
+
+        <body style="
+            margin: 0;
+            padding: 35px 15px;
+            background-color: #09090b;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #ffffff;
+        ">
+
+            <div style="
+                max-width: 480px;
+                margin: 0 auto;
+                background-color: #18181b;
+                border: 1px solid #27272a;
+                border-radius: 16px;
+                overflow: hidden;
+            ">
+
+                <div style="
+                    padding: 28px 25px;
+                    text-align: center;
+                    border-bottom: 1px solid #27272a;
+                ">
+                    <div style="
+                        display: inline-block;
+                        background-color: #14532d;
+                        color: #4ade80;
+                        padding: 10px 16px;
+                        border-radius: 10px;
+                        font-size: 15px;
+                        font-weight: bold;
+                        letter-spacing: 1px;
+                    ">
+                        FINANCEIRO
+                    </div>
+                </div>
+
+                <div style="padding: 32px 28px;">
+
+                    <h1 style="
+                        margin: 0 0 15px;
+                        font-size: 23px;
+                        color: #ffffff;
+                        text-align: center;
+                    ">
+                        Recuperação de senha
+                    </h1>
+
+                    <p style="
+                        color: #a1a1aa;
+                        font-size: 15px;
+                        line-height: 1.7;
+                        text-align: center;
+                    ">
+                        Recebemos uma solicitação para redefinir
+                        a senha da sua conta.
+                    </p>
+
+                    <p style="
+                        color: #d4d4d8;
+                        font-size: 14px;
+                        text-align: center;
+                        margin-top: 28px;
+                    ">
+                        Utilize o código abaixo:
+                    </p>
+
+                    <div style="
+                        margin: 20px 0;
+                        padding: 22px 10px;
+                        background-color: #09090b;
+                        border: 1px solid #166534;
+                        border-radius: 12px;
+                        text-align: center;
+                    ">
+                        <span style="
+                            color: #4ade80;
+                            font-size: 34px;
+                            font-weight: bold;
+                            letter-spacing: 10px;
+                        ">
+                            {codigo}
+                        </span>
+                    </div>
+
+                    <p style="
+                        color: #a1a1aa;
+                        font-size: 13px;
+                        text-align: center;
+                        line-height: 1.6;
+                    ">
+                        Este código é válido por
+                        <strong style="color: #ffffff;">
+                            10 minutos
+                        </strong>.
+                    </p>
+
+                    <div style="
+                        margin-top: 28px;
+                        padding: 15px;
+                        background-color: #27272a;
+                        border-radius: 10px;
+                    ">
+                        <p style="
+                            margin: 0;
+                            color: #a1a1aa;
+                            font-size: 12px;
+                            line-height: 1.6;
+                            text-align: center;
+                        ">
+                            Se você não solicitou a recuperação
+                            da senha, ignore este email.
+                            Sua conta continuará protegida.
+                        </p>
+                    </div>
+
+                </div>
+
+                <div style="
+                    padding: 20px;
+                    border-top: 1px solid #27272a;
+                    text-align: center;
+                ">
+                    <p style="
+                        margin: 0;
+                        color: #71717a;
+                        font-size: 12px;
+                    ">
+                        © Financeiro — Sistema de controle financeiro
+                    </p>
+                </div>
+
+            </div>
+
+        </body>
+        </html>
+        """,
+        subtype="html"
     )
 
     try:
