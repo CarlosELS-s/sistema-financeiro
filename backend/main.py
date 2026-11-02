@@ -130,3 +130,4 @@ def verificar_api():
 #python -m uvicorn main:app --reload
 #aaaaa
 #adaddklajkl
+#dkjfaklaa
