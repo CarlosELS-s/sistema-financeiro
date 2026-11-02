@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -21,12 +20,9 @@
 
     <div class="app">
 
-        <!-- MENU LATERAL -->
-
         <aside class="sidebar" id="sidebar">
 
             <div class="logo">
-
                 <div class="logo-icon">
                     <img src="/favicon1.png" alt="Meu Financeiro">
                 </div>
@@ -35,7 +31,6 @@
                     <h2>Meu Financeiro</h2>
                     <span>Controle pessoal</span>
                 </div>
-
             </div>
 
             <div class="menu-title">MENU PRINCIPAL</div>
@@ -74,25 +69,22 @@
 
             </nav>
 
-            <!-- USUÁRIO E SAÍDA -->
-
             <div class="sidebar-bottom">
 
                 <div class="user-card">
-
                     <div class="user-avatar">U</div>
 
                     <div>
                         <strong>Meu usuário</strong>
                         <span>Conta pessoal</span>
                     </div>
-
                 </div>
 
                 <button
                     id="btnSair"
                     class="btn-sair"
                     type="button"
+                    onclick="sairDaConta()"
                 >
                     <span class="sair-icon">↪</span>
                     <span>Sair da conta</span>
@@ -102,15 +94,9 @@
 
         </aside>
 
-        <!-- FUNDO ESCURO DO MENU MOBILE -->
-
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-        <!-- CONTEÚDO PRINCIPAL -->
-
         <main class="main-content">
-
-            <!-- BOTÃO DE MENU PARA CELULAR -->
 
             <button
                 type="button"
@@ -124,8 +110,6 @@
                 <span></span>
                 <span></span>
             </button>
-
-            <!-- CABEÇALHO -->
 
             <header class="topbar">
 
@@ -154,22 +138,33 @@
 
             </header>
 
-            <!-- DASHBOARD -->
-
             <section id="dashboard">
 
                 <div class="section-heading">
-
                     <div>
                         <h2>Visão geral</h2>
                         <p>Resumo das suas finanças</p>
                     </div>
-
                 </div>
 
-                <!-- CARDS -->
-
                 <div class="cards">
+
+                    <!-- RESULTADO DO MÊS - PRIMEIRO CARD -->
+
+                    <div class="card result-card">
+
+                        <div class="card-top">
+                            <span>Resultado do mês</span>
+                            <div class="card-icon blue">◈</div>
+                        </div>
+
+                        <h2 id="saldoMes" class="green-text">
+                            R$ 0,00
+                        </h2>
+
+                        <p>Receitas menos despesas</p>
+
+                    </div>
 
                     <!-- SALDO TOTAL -->
 
@@ -180,7 +175,9 @@
                             <div class="card-icon">R$</div>
                         </div>
 
-                        <h2 id="saldoTotal">R$ 0,00</h2>
+                        <h2 id="saldoTotal" class="green-text">
+                            R$ 0,00
+                        </h2>
 
                         <p>Resultado acumulado</p>
 
@@ -220,38 +217,19 @@
 
                     </div>
 
-                    <!-- RESULTADO DO MÊS EM DESTAQUE -->
-
-                    <div class="card result-card">
-
-                        <div class="card-top">
-                            <span>Resultado do mês</span>
-                            <div class="card-icon blue">◈</div>
-                        </div>
-
-                        <h2 id="saldoMes">R$ 0,00</h2>
-
-                        <p>Receitas menos despesas</p>
-
-                    </div>
-
                 </div>
 
                 <!-- GRÁFICOS -->
 
                 <div class="charts-grid" id="relatorios">
 
-                    <!-- RECEITAS X DESPESAS -->
-
                     <div class="panel">
 
                         <div class="panel-header">
-
                             <div>
                                 <h3>Receitas x Despesas</h3>
                                 <p>Comparação do mês selecionado</p>
                             </div>
-
                         </div>
 
                         <div class="comparison-chart">
@@ -278,17 +256,13 @@
 
                     </div>
 
-                    <!-- DESPESAS POR CATEGORIA -->
-
                     <div class="panel">
 
                         <div class="panel-header">
-
                             <div>
                                 <h3>Despesas por categoria</h3>
                                 <p>Distribuição dos gastos</p>
                             </div>
-
                         </div>
 
                         <div class="category-chart">
@@ -317,12 +291,10 @@
             <section id="nova-transacao" class="panel form-panel">
 
                 <div class="panel-header">
-
                     <div>
                         <h3>Nova movimentação</h3>
                         <p>Cadastre uma receita ou despesa.</p>
                     </div>
-
                 </div>
 
                 <form id="formTransacao">
@@ -330,7 +302,6 @@
                     <div class="form-grid">
 
                         <div class="form-group">
-
                             <label for="descricao">Descrição</label>
 
                             <input
@@ -340,30 +311,23 @@
                                 maxlength="200"
                                 required
                             >
-
                         </div>
 
                         <div class="form-group">
-
                             <label for="tipo">Tipo</label>
 
                             <select id="tipo" required>
                                 <option value="receita">Receita</option>
                                 <option value="despesa">Despesa</option>
                             </select>
-
                         </div>
 
                         <div class="form-group">
-
                             <label for="categoria">Categoria</label>
-
                             <select id="categoria" required></select>
-
                         </div>
 
                         <div class="form-group">
-
                             <label for="valor">Valor (R$)</label>
 
                             <input
@@ -375,25 +339,14 @@
                                 step="0.01"
                                 required
                             >
-
                         </div>
 
                         <div class="form-group">
-
                             <label for="data">Data</label>
-
-                            <input
-                                type="date"
-                                id="data"
-                                required
-                            >
-
+                            <input type="date" id="data" required>
                         </div>
 
-                        <!-- FORMA DE PAGAMENTO -->
-
                         <div class="form-group" id="grupoFormaPagamento" hidden>
-
                             <label for="formaPagamento">Forma de pagamento</label>
 
                             <select id="formaPagamento">
@@ -401,25 +354,17 @@
                                 <option value="debito">Cartão de débito</option>
                                 <option value="credito">Cartão de crédito</option>
                             </select>
-
                         </div>
 
-                        <!-- CARTÃO DE CRÉDITO -->
-
                         <div class="form-group" id="grupoCartao" hidden>
-
                             <label for="cartaoSelecionado">Cartão de crédito</label>
 
                             <select id="cartaoSelecionado">
                                 <option value="">Selecione um cartão</option>
                             </select>
-
                         </div>
 
-                        <!-- PARCELAS -->
-
                         <div class="form-group" id="grupoParcelas" hidden>
-
                             <label for="quantidadeParcelas">Quantidade de parcelas</label>
 
                             <input
@@ -430,7 +375,6 @@
                                 step="1"
                                 value="1"
                             >
-
                         </div>
 
                     </div>
@@ -519,13 +463,11 @@
                         </thead>
 
                         <tbody id="tabelaTransacoes">
-
                             <tr>
                                 <td colspan="6" class="empty">
                                     Carregando movimentações...
                                 </td>
                             </tr>
-
                         </tbody>
 
                     </table>
@@ -534,8 +476,6 @@
 
             </section>
 
-            <!-- RODAPÉ -->
-
             <footer>
                 Meu Financeiro © 2026 — Controle financeiro pessoal
             </footer>
@@ -543,8 +483,6 @@
         </main>
 
     </div>
-
-    <!-- JAVASCRIPT -->
 
     <script src="/js/sidebar.js"></script>
     <script src="/js/app.js"></script>
@@ -579,11 +517,9 @@
             };
 
             botao.addEventListener("click", () => {
-
                 sidebar.classList.contains("sidebar-open")
                     ? fecharMenu()
                     : abrirMenu();
-
             });
 
             overlay.addEventListener("click", fecharMenu);
@@ -593,20 +529,15 @@
             });
 
             document.addEventListener("keydown", evento => {
-                if (evento.key === "Escape") {
-                    fecharMenu();
-                }
+                if (evento.key === "Escape") fecharMenu();
             });
 
             window.addEventListener("resize", () => {
-                if (window.innerWidth > 800) {
-                    fecharMenu();
-                }
+                if (window.innerWidth > 800) fecharMenu();
             });
 
         });
     </script>
 
 </body>
-
 </html>
