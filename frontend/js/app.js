@@ -1,4 +1,3 @@
-
 const API_URL = "/api";
 
 // ======================================
@@ -42,7 +41,6 @@ const coresGrafico = [
     "#64748b"
 ];
 
-
 // ======================================
 // FORMATAÇÃO
 // ======================================
@@ -75,7 +73,6 @@ const escaparHTML = (valor) => {
         return mapa[caractere];
     });
 };
-
 
 // ======================================
 // AUTENTICAÇÃO E REQUISIÇÕES
@@ -143,7 +140,6 @@ async function requisicao(url, opcoes = {}) {
     return dados;
 }
 
-
 // ======================================
 // INICIALIZAÇÃO
 // ======================================
@@ -157,7 +153,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    // Carrega os dados do usuário.
     const usuarioSalvo = localStorage.getItem("usuario");
 
     if (usuarioSalvo) {
@@ -251,7 +246,6 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
 });
-
 
 // ======================================
 // PAGAMENTO E CARTÕES
@@ -347,7 +341,6 @@ async function carregarCartoes() {
     }
 }
 
-
 // ======================================
 // ATUALIZAR TELA
 // ======================================
@@ -356,7 +349,6 @@ function atualizarTela() {
     carregarDashboard();
     carregarTransacoes();
 }
-
 
 // ======================================
 // CATEGORIAS
@@ -381,7 +373,6 @@ function atualizarCategorias() {
         select.appendChild(option);
     });
 }
-
 
 // ======================================
 // BUSCAR CONTAS FIXAS DO MÊS
@@ -422,7 +413,6 @@ async function carregarContasFixasDoMes(mes) {
     }
 }
 
-
 // ======================================
 // DASHBOARD
 // ======================================
@@ -453,25 +443,66 @@ async function carregarDashboard() {
         const saldoComPrevisao =
             Number(dados.saldo_mes || 0) - totalContasPendentes;
 
-        document.getElementById("saldoTotal").textContent =
-            formatarMoeda(dados.saldo_total);
+        // SALDO TOTAL
+
+        const saldoTotalElemento =
+            document.getElementById("saldoTotal");
+
+        const saldoTotal = Number(dados.saldo_total || 0);
+
+        if (saldoTotalElemento) {
+            saldoTotalElemento.textContent =
+                formatarMoeda(saldoTotal);
+
+            saldoTotalElemento.classList.toggle(
+                "red-text",
+                saldoTotal < 0
+            );
+
+            saldoTotalElemento.classList.toggle(
+                "green-text",
+                saldoTotal >= 0
+            );
+        }
+
+        // RESULTADO DO MÊS
+
+        const saldoMesElemento =
+            document.getElementById("saldoMes");
+
+        if (saldoMesElemento) {
+            saldoMesElemento.textContent =
+                formatarMoeda(saldoComPrevisao);
+
+            saldoMesElemento.classList.toggle(
+                "red-text",
+                saldoComPrevisao < 0
+            );
+
+            saldoMesElemento.classList.toggle(
+                "green-text",
+                saldoComPrevisao >= 0
+            );
+        }
+
+        // RECEITAS
 
         document.getElementById("receitasMes").textContent =
             formatarMoeda(dados.receitas_mes);
 
+        // DESPESAS
+
         document.getElementById("despesasMes").textContent =
             formatarMoeda(despesasComPrevisao);
 
-        document.getElementById("saldoMes").textContent =
-            formatarMoeda(saldoComPrevisao);
-
-        document.getElementById("saldoMes").className =
-            saldoComPrevisao >= 0 ? "green-text" : "red-text";
+        // GRÁFICO DE COMPARAÇÃO
 
         atualizarGraficoComparacao(
             Number(dados.receitas_mes || 0),
             despesasComPrevisao
         );
+
+        // DESPESAS POR CATEGORIA
 
         const categoriasAgrupadas = new Map();
 
@@ -515,7 +546,6 @@ async function carregarDashboard() {
     }
 }
 
-
 // ======================================
 // GRÁFICO RECEITAS X DESPESAS
 // ======================================
@@ -540,7 +570,6 @@ function atualizarGraficoComparacao(receitas, despesas) {
     document.getElementById("graficoDespesasValor").textContent =
         formatarMoeda(despesas);
 }
-
 
 // ======================================
 // GRÁFICO DE CATEGORIAS
@@ -608,7 +637,6 @@ function atualizarGraficoCategorias(dados) {
     grafico.style.background =
         `conic-gradient(${partes.join(", ")})`;
 }
-
 
 // ======================================
 // LISTAR MOVIMENTAÇÕES
@@ -790,7 +818,6 @@ async function carregarTransacoes() {
     }
 }
 
-
 // ======================================
 // CADASTRAR TRANSAÇÃO
 // ======================================
@@ -802,6 +829,7 @@ async function salvarTransacao(evento) {
     const mensagem = document.getElementById("mensagemFormulario");
 
     const tipo = document.getElementById("tipo").value;
+
     const formaPagamento =
         document.getElementById("formaPagamento")?.value || "pix";
 
@@ -901,7 +929,6 @@ async function salvarTransacao(evento) {
     }
 }
 
-
 // ======================================
 // EXCLUIR TRANSAÇÃO
 // ======================================
@@ -925,7 +952,6 @@ async function excluirTransacao(id) {
     }
 }
 
-
 // ======================================
 // NAVEGAÇÃO
 // ======================================
@@ -937,7 +963,6 @@ function irParaFormulario() {
 
     document.getElementById("descricao").focus();
 }
-
 
 // ======================================
 // MENSAGENS
@@ -952,7 +977,6 @@ function mostrarMensagem(texto, tipo) {
     mensagem.className = `form-message ${tipo}`;
 }
 
-
 // ======================================
 // EXPORTAR PLANILHA EXCEL
 // ======================================
@@ -966,7 +990,6 @@ async function exportarExcel() {
             return;
         }
 
-        // Pega o mês selecionado no Dashboard.
         const campoMes = document.getElementById("mesFiltro");
         const mes = campoMes?.value;
 
@@ -975,7 +998,6 @@ async function exportarExcel() {
             return;
         }
 
-        // Envia o mês para o backend.
         const resposta = await fetch(
             `${API_URL}/planilhas/exportar?mes=${encodeURIComponent(mes)}`,
             {
@@ -998,7 +1020,6 @@ async function exportarExcel() {
             );
         }
 
-        // Baixa o arquivo.
         const blob = await resposta.blob();
         const url = URL.createObjectURL(blob);
 
@@ -1018,8 +1039,6 @@ async function exportarExcel() {
         console.error("Erro ao exportar Excel:", erro);
     }
 }
-
-
 
 // ======================================
 // IMPORTAR PLANILHA EXCEL
@@ -1084,7 +1103,7 @@ async function importarExcel(evento) {
         }
 
         alert(
-            `${dados.importadas} movimentações importadas com sucesso!`
+            `${dados.importadas ?? dados.importados ?? 0} movimentações importadas com sucesso!`
         );
 
         atualizarTela();
@@ -1096,7 +1115,6 @@ async function importarExcel(evento) {
         evento.target.value = "";
     }
 }
-
 
 // ======================================
 // SAIR DA CONTA
