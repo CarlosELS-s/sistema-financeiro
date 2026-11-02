@@ -640,3 +640,4 @@ def pagar_fatura(
         "valor_pago_centavos": total,
         "transacao_id": transacao.id
     }
+#adicionado editar cartao

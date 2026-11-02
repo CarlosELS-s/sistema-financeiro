@@ -1,25 +1,18 @@
-
 :root {
     --background: #0b1120;
     --sidebar: #101827;
     --panel: #151f30;
     --panel-hover: #1b2940;
-
     --border: #263349;
-
     --text: #f1f5f9;
     --muted: #8c9bb0;
-
     --green: #22c55e;
     --red: #ef4444;
     --blue: #3b82f6;
-
     --radius: 14px;
 }
 
-/* =====================================
-   CONFIGURAÇÕES GERAIS
-===================================== */
+/* CONFIGURAÇÕES GERAIS */
 
 * {
     margin: 0;
@@ -57,22 +50,44 @@ button {
     min-height: 100vh;
 }
 
-/* =====================================
-   SIDEBAR
-===================================== */
+/* LOGOS — TAMANHO CONTROLADO */
+
+.logo-icon {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px;
+    max-width: 42px;
+    min-height: 42px;
+    max-height: 42px;
+    flex: 0 0 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: transparent;
+    border-radius: 12px;
+}
+
+.logo-icon img {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* SIDEBAR */
 
 .sidebar {
     width: 255px;
     background: var(--sidebar);
     border-right: 1px solid var(--border);
-
     position: fixed;
     left: 0;
     top: 0;
     bottom: 0;
-
     padding: 28px 18px;
-
     display: flex;
     flex-direction: column;
     z-index: 10;
@@ -84,23 +99,6 @@ button {
     gap: 12px;
     padding: 0 8px;
     margin-bottom: 55px;
-}
-
-.logo-icon {
-    width: 42px;
-    height: 42px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    background: var(--green);
-    color: #07140b;
-
-    font-weight: 800;
-    font-size: 21px;
-
-    border-radius: 12px;
 }
 
 .logo h2 {
@@ -130,17 +128,13 @@ button {
 .menu-item {
     text-decoration: none;
     color: var(--muted);
-
     display: flex;
     align-items: center;
     gap: 12px;
-
     padding: 13px 12px;
-
     border-radius: 9px;
     font-size: 13px;
     font-weight: 500;
-
     transition: 0.2s;
 }
 
@@ -161,7 +155,6 @@ button {
 .user-card {
     border-top: 1px solid var(--border);
     padding: 20px 5px 0;
-
     display: flex;
     align-items: center;
     gap: 12px;
@@ -170,14 +163,11 @@ button {
 .user-avatar {
     width: 38px;
     height: 38px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     background: #263c54;
     border-radius: 50%;
-
     color: white;
     font-weight: 700;
 }
@@ -194,36 +184,28 @@ button {
     margin-top: 4px;
 }
 
-/* =====================================
-   BOTÃO SAIR
-===================================== */
+/* BOTÃO SAIR */
 
 .btn-sair {
     width: calc(100% - 24px);
     min-height: 48px;
     margin: 20px 12px 12px;
     padding: 0 16px;
-
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-
     background: linear-gradient(
         135deg,
         rgba(239, 68, 68, 0.13),
         rgba(185, 28, 28, 0.08)
     );
-
     color: #f87171;
     border: 1px solid rgba(248, 113, 113, 0.22);
     border-radius: 12px;
-
     font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.2px;
-
-    cursor: pointer;
     transition: all 0.25s ease;
 }
 
@@ -231,7 +213,6 @@ button {
     background: linear-gradient(135deg, #dc2626, #b91c1c);
     color: #ffffff;
     border-color: #ef4444;
-
     transform: translateY(-2px);
     box-shadow: 0 7px 20px rgba(220, 38, 38, 0.22);
 }
@@ -240,15 +221,13 @@ button {
     transform: scale(0.97);
 }
 
-/* =====================================
-   CONTEÚDO PRINCIPAL
-===================================== */
+/* CONTEÚDO PRINCIPAL */
 
 .main-content {
     margin-left: 255px;
     width: calc(100% - 255px);
-    padding: 35px 38px;
     max-width: 1800px;
+    padding: 35px 38px;
 }
 
 .topbar {
@@ -288,20 +267,15 @@ button {
     outline: none;
 }
 
-/* =====================================
-   BOTÕES GERAIS
-===================================== */
+/* BOTÕES */
 
 .btn-primary {
     background: var(--green);
     color: #06140b;
-
     padding: 12px 17px;
     border-radius: 9px;
-
     font-size: 12px;
     font-weight: 700;
-
     transition: 0.2s;
 }
 
@@ -313,17 +287,13 @@ button {
 .btn-secondary {
     background: #253247;
     color: var(--text);
-
     padding: 12px 17px;
     border-radius: 9px;
-
     font-size: 12px;
     font-weight: 600;
 }
 
-/* =====================================
-   SEÇÕES
-===================================== */
+/* SEÇÕES */
 
 .section-heading {
     margin-bottom: 20px;
@@ -333,9 +303,7 @@ button {
     font-size: 17px;
 }
 
-/* =====================================
-   CARDS
-===================================== */
+/* CARDS */
 
 .cards {
     display: grid;
@@ -347,10 +315,8 @@ button {
 .card {
     background: var(--panel);
     border: 1px solid var(--border);
-
     padding: 23px;
     border-radius: var(--radius);
-
     min-width: 0;
 }
 
@@ -358,7 +324,6 @@ button {
     display: flex;
     justify-content: space-between;
     align-items: center;
-
     color: var(--muted);
     font-size: 12px;
 }
@@ -366,16 +331,12 @@ button {
 .card-icon {
     width: 36px;
     height: 36px;
-
     border-radius: 10px;
-
     display: flex;
     justify-content: center;
     align-items: center;
-
     background: #26374c;
     color: white;
-
     font-weight: 700;
 }
 
@@ -419,9 +380,7 @@ button {
     border-color: #225d40;
 }
 
-/* =====================================
-   PAINÉIS E GRÁFICOS
-===================================== */
+/* PAINÉIS E GRÁFICOS */
 
 .charts-grid {
     display: grid;
@@ -434,7 +393,6 @@ button {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-
     padding: 24px;
     margin-bottom: 24px;
 }
@@ -444,15 +402,12 @@ button {
     align-items: center;
     justify-content: space-between;
     gap: 15px;
-
     margin-bottom: 25px;
 }
 
 .panel-header h3 {
     font-size: 15px;
 }
-
-/* GRÁFICO DE COMPARAÇÃO */
 
 .comparison-chart {
     padding: 10px 0;
@@ -462,7 +417,6 @@ button {
     display: flex;
     justify-content: space-between;
     margin-bottom: 11px;
-
     font-size: 12px;
 }
 
@@ -493,8 +447,6 @@ button {
     background: var(--red);
 }
 
-/* GRÁFICO DE CATEGORIAS */
-
 .category-chart {
     display: flex;
     align-items: center;
@@ -507,25 +459,19 @@ button {
     width: 155px;
     height: 155px;
     flex-shrink: 0;
-
     border-radius: 50%;
-
     background: conic-gradient(#263247 0deg 360deg);
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     position: relative;
 }
 
 .donut::before {
     content: "";
     position: absolute;
-
     width: 112px;
     height: 112px;
-
     background: var(--panel);
     border-radius: 50%;
 }
@@ -559,7 +505,6 @@ button {
     display: flex;
     align-items: center;
     gap: 8px;
-
     color: var(--muted);
     font-size: 11px;
 }
@@ -571,9 +516,7 @@ button {
     flex-shrink: 0;
 }
 
-/* =====================================
-   FORMULÁRIOS GERAIS
-===================================== */
+/* FORMULÁRIOS */
 
 .form-panel {
     margin-top: 25px;
@@ -601,13 +544,10 @@ button {
 .form-group select {
     width: 100%;
     height: 44px;
-
     background: #0d1727;
     border: 1px solid var(--border);
     border-radius: 8px;
-
     padding: 0 12px;
-
     color: var(--text);
     outline: none;
 }
@@ -641,9 +581,7 @@ button {
     color: var(--red);
 }
 
-/* =====================================
-   TABELAS E TRANSAÇÕES
-===================================== */
+/* TABELAS */
 
 .transactions-panel {
     margin-top: 25px;
@@ -740,9 +678,7 @@ tbody tr:hover {
     padding: 35px;
 }
 
-/* =====================================
-   PLANILHAS
-===================================== */
+/* PLANILHAS */
 
 .transaction-actions {
     display: flex;
@@ -779,9 +715,7 @@ tbody tr:hover {
     color: white;
 }
 
-/* =====================================
-   CONTAS FIXAS
-===================================== */
+/* CONTAS FIXAS */
 
 .contas-panel {
     margin-top: 25px;
@@ -897,13 +831,11 @@ tbody tr:hover {
     color: var(--red);
 }
 
-/* EDITOR DE CONTA */
-
 .editor-conta {
     padding: 18px;
-    border: 1px solid var(--border-color, #333);
+    border: 1px solid var(--border);
     border-radius: 12px;
-    background: var(--card-background, #181818);
+    background: var(--panel);
 }
 
 .editor-conta h4 {
@@ -940,27 +872,22 @@ tbody tr:hover {
 
 .cancelar-edicao {
     padding: 10px 16px;
-    border: 1px solid var(--border-color, #444);
+    border: 1px solid var(--border);
     border-radius: 8px;
     background: transparent;
     color: inherit;
 }
 
-/* =====================================
-   LOGIN E CADASTRO
-===================================== */
+/* LOGIN E CADASTRO */
 
 .auth-body {
     min-height: 100vh;
     margin: 0;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     padding: 24px;
     box-sizing: border-box;
-
     background:
         radial-gradient(
             circle at 15% 20%,
@@ -973,7 +900,6 @@ tbody tr:hover {
             transparent 35%
         ),
         #080e1a;
-
     font-family: Arial, sans-serif;
 }
 
@@ -985,16 +911,12 @@ tbody tr:hover {
 .auth-card {
     width: 100%;
     box-sizing: border-box;
-
     padding: 42px 36px;
-
     background: rgba(21, 31, 48, 0.96);
     border: 1px solid rgba(148, 163, 184, 0.14);
     border-radius: 22px;
-
     box-shadow: 0 25px 70px rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(15px);
-
     animation: aparecerLogin 0.5s ease;
 }
 
@@ -1010,45 +932,28 @@ tbody tr:hover {
     }
 }
 
-/* LOGO DA TELA DE LOGIN - CORRIGIDO */
-
 .auth-logo {
     width: 100%;
     height: auto;
-
     margin: 0 auto 24px;
-
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 14px;
-
-    border-radius: 0;
     background: transparent;
     color: var(--text);
-
-    font-size: inherit;
-    font-weight: normal;
-
-    box-shadow: none;
 }
 
 .auth-logo .logo-icon {
-    width: 48px;
-    height: 48px;
+    width: 48px !important;
+    height: 48px !important;
     min-width: 48px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    background: var(--green);
-    color: #07140b;
-
-    font-size: 23px;
-    font-weight: 800;
-
-    border-radius: 13px;
+    max-width: 48px;
+    min-height: 48px;
+    max-height: 48px;
+    flex: 0 0 48px;
+    overflow: hidden;
+    border-radius: 12px;
 }
 
 .auth-logo h2 {
@@ -1062,12 +967,9 @@ tbody tr:hover {
 .auth-logo span {
     display: block;
     margin-top: 4px;
-
     color: #94a3b8;
     font-size: 12px;
 }
-
-/* TÍTULO DO LOGIN */
 
 .auth-heading {
     margin-bottom: 30px;
@@ -1076,7 +978,6 @@ tbody tr:hover {
 
 .auth-heading h1 {
     margin: 0 0 10px;
-
     color: #f8fafc;
     font-size: 28px;
     font-weight: 800;
@@ -1085,13 +986,10 @@ tbody tr:hover {
 
 .auth-heading p {
     margin: 0;
-
     color: #94a3b8;
     font-size: 14px;
     line-height: 1.6;
 }
-
-/* FORMULÁRIO DE LOGIN */
 
 .auth-card form {
     display: flex;
@@ -1100,13 +998,12 @@ tbody tr:hover {
 }
 
 .auth-card .form-group {
-    margin-bottom: 21px;
+    margin-bottom: 0;
 }
 
 .auth-card label {
     display: block;
     margin-bottom: 9px;
-
     color: #cbd5e1;
     font-size: 13px;
     font-weight: 600;
@@ -1115,19 +1012,14 @@ tbody tr:hover {
 .auth-card input {
     width: 100%;
     height: 49px;
-
     box-sizing: border-box;
     padding: 0 15px;
-
     color: #f8fafc;
     background: #0d1727;
-
     border: 1px solid #29374b;
     border-radius: 11px;
-
     outline: none;
     font-size: 14px;
-
     transition: 0.25s;
 }
 
@@ -1140,23 +1032,16 @@ tbody tr:hover {
     box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.13);
 }
 
-/* BOTÃO DE LOGIN */
-
 .auth-button {
     width: 100%;
     min-height: 50px;
-
     margin-top: 10px;
-
     border: none;
     border-radius: 11px;
-
     background: linear-gradient(135deg, #22c55e, #16a34a);
     color: #052e16;
-
     font-size: 15px;
     font-weight: 800;
-
     cursor: pointer;
     transition: 0.25s;
 }
@@ -1173,11 +1058,8 @@ tbody tr:hover {
     transform: none;
 }
 
-/* RODAPÉ DO LOGIN */
-
 .auth-footer {
     margin-top: 25px;
-
     text-align: center;
     color: #94a3b8;
     font-size: 13px;
@@ -1195,15 +1077,12 @@ tbody tr:hover {
 
 .auth-copy {
     margin-top: 25px;
-
     color: #64748b;
     text-align: center;
     font-size: 11px;
 }
 
-/* =====================================
-   RODAPÉ
-===================================== */
+/* RODAPÉ */
 
 footer {
     text-align: center;
@@ -1212,9 +1091,55 @@ footer {
     padding: 20px;
 }
 
-/* =====================================
-   RESPONSIVIDADE
-===================================== */
+/* CARD DE RESULTADO */
+
+.result-card {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #123f2d 0%, #172d2a 55%, #151f30 100%);
+    border: 1px solid rgba(34, 197, 94, 0.55);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.result-card::after {
+    content: "";
+    position: absolute;
+    width: 130px;
+    height: 130px;
+    right: -45px;
+    bottom: -65px;
+    border-radius: 50%;
+    background: rgba(34, 197, 94, 0.09);
+    pointer-events: none;
+}
+
+.result-card .card-top span {
+    color: #bbf7d0;
+    font-weight: 700;
+}
+
+.result-card h2 {
+    color: #4ade80;
+    font-size: clamp(25px, 2.4vw, 32px);
+    font-weight: 800;
+}
+
+.result-card .card-icon {
+    background: rgba(34, 197, 94, 0.18);
+    color: #4ade80;
+}
+
+/* MENU MOBILE */
+
+.mobile-menu-button {
+    display: none;
+}
+
+.sidebar-overlay {
+    display: none;
+}
+
+/* RESPONSIVIDADE */
 
 @media (max-width: 1150px) {
     .cards {
@@ -1227,70 +1152,230 @@ footer {
 }
 
 @media (max-width: 800px) {
+    html,
+    body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    .app {
+        width: 100%;
+        min-width: 0;
+    }
+
     .sidebar {
-        width: 75px;
-        padding: 20px 10px;
+        width: min(290px, 84vw);
+        max-width: 84vw;
+        padding: 25px 18px;
+        left: 0;
+        right: auto;
+        z-index: 1002;
+        transform: translateX(-105%);
+        transition: transform 0.28s ease;
+        box-shadow: 18px 0 45px rgba(0, 0, 0, 0.35);
+        overflow-y: auto;
+    }
+
+    .sidebar.sidebar-open {
+        transform: translateX(0);
     }
 
     .logo {
-        justify-content: center;
-        padding: 0;
+        justify-content: flex-start;
+        padding: 0 8px;
+        margin-bottom: 38px;
     }
 
-    .logo > div:last-child,
-    .menu-title,
-    .menu-item:not(.active),
-    .menu-item.active {
-        font-size: 0;
+    .logo > div:last-child {
+        display: block;
+        font-size: initial;
     }
 
-    .menu-item {
-        justify-content: center;
-        padding: 14px 5px;
+    .menu-title {
+        display: block;
+        font-size: 10px;
+    }
+
+    .menu-item,
+    .menu-item.active,
+    .menu-item:not(.active) {
+        justify-content: flex-start;
+        gap: 12px;
+        padding: 13px 12px;
+        font-size: 13px;
     }
 
     .menu-item span {
-        font-size: 21px;
+        font-size: 20px;
     }
 
     .user-card {
-        justify-content: center;
+        justify-content: flex-start;
     }
 
     .user-card > div:last-child {
-        display: none;
+        display: block;
     }
 
     .btn-sair {
-        width: 48px;
-        min-width: 48px;
-        margin: 15px auto 0;
-        padding: 0;
-        font-size: 0;
+        width: calc(100% - 24px);
+        min-width: 0;
+        margin: 20px 12px 12px;
+        padding: 0 16px;
+        font-size: 14px;
     }
 
     .btn-sair .sair-icon {
         font-size: 20px;
     }
 
+    .sidebar-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 1001;
+        background: rgba(2, 6, 15, 0.68);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+
+    .sidebar-overlay.overlay-visible {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    body.menu-open {
+        overflow: hidden;
+    }
+
     .main-content {
-        margin-left: 75px;
-        width: calc(100% - 75px);
-        padding: 25px 18px;
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        margin-left: 0;
+        padding: 18px 16px 28px;
+    }
+
+    .mobile-menu-button {
+        width: 44px;
+        height: 44px;
+        margin: 0 0 16px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--panel);
+        color: var(--text);
+    }
+
+    .mobile-menu-button span {
+        display: block;
+        width: 20px;
+        height: 2px;
+        border-radius: 2px;
+        background: #e2e8f0;
     }
 
     .topbar {
+        margin-bottom: 28px;
+        gap: 14px;
         align-items: flex-start;
         flex-direction: column;
     }
 
+    .topbar h1 {
+        font-size: 23px;
+    }
+
     .topbar-actions {
         width: 100%;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+    }
+
+    .topbar-actions > * {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .card {
+        padding: 17px;
+    }
+
+    .card h2 {
+        font-size: clamp(18px, 4.5vw, 23px);
+        margin-top: 17px;
+    }
+
+    .card-top {
+        gap: 8px;
+        font-size: 11px;
+    }
+
+    .card-icon {
+        width: 32px;
+        height: 32px;
+        flex: 0 0 32px;
+    }
+
+    .result-card {
+        grid-column: 1 / -1;
+        order: -1;
+        padding: 21px;
+    }
+
+    .result-card h2 {
+        font-size: 30px;
+    }
+
+    .charts-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+    }
+
+    .panel {
+        min-width: 0;
+        padding: 18px;
+        overflow: hidden;
+    }
+
+    .category-chart {
+        gap: 18px;
     }
 
     .form-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 15px;
+    }
+
+    .transactions-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .transaction-actions {
+        width: 100%;
+    }
+
+    .transaction-actions > * {
+        min-width: 0;
+    }
+
+    .table-container {
+        max-width: 100%;
+        -webkit-overflow-scrolling: touch;
     }
 }
 
@@ -1320,28 +1405,55 @@ footer {
 }
 
 @media (max-width: 520px) {
-    .cards {
-        grid-template-columns: 1fr;
-    }
-
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-
     .main-content {
-        padding: 20px 12px;
-    }
-
-    .panel {
-        padding: 16px;
+        padding: 14px 12px 24px;
     }
 
     .topbar h1 {
-        font-size: 22px;
+        font-size: 21px;
     }
 
-    .topbar-actions > * {
-        flex: 1;
+    .section-heading h2 {
+        font-size: 16px;
+    }
+
+    .cards {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 11px;
+    }
+
+    .card {
+        padding: 18px;
+    }
+
+    .result-card {
+        grid-column: auto;
+        padding: 22px 19px;
+    }
+
+    .result-card h2 {
+        font-size: 31px;
+    }
+
+    .card h2 {
+        margin-top: 15px;
+    }
+
+    .form-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .form-actions button {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .panel {
+        padding: 15px;
     }
 
     .category-chart {
@@ -1350,10 +1462,35 @@ footer {
 
     .legend {
         width: 100%;
+        min-width: 0;
     }
-}
 
-@media (max-width: 480px) {
+    .chart-info {
+        gap: 10px;
+        font-size: 11px;
+    }
+
+    .transaction-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .transaction-actions select {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    .transaction-actions button {
+        min-width: 0;
+        padding: 10px 8px;
+        font-size: 10px;
+    }
+
+    footer {
+        padding: 18px 8px;
+        line-height: 1.5;
+    }
+
     .auth-body {
         padding: 16px;
     }
@@ -1369,4 +1506,10 @@ footer {
     .auth-logo h2 {
         font-size: 18px;
     }
+}
+.logo img {
+    width: 45px;
+    height: 45px;
+    object-fit: contain;
+    flex-shrink: 0;
 }
