@@ -12,21 +12,17 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
-
     <div class="app">
 
         <aside class="sidebar" id="sidebar">
-
             <div class="logo">
                 <div class="logo-icon">
                     <img src="/favicon1.png" alt="Meu Financeiro">
                 </div>
-
                 <div>
                     <h2>Meu Financeiro</h2>
                     <span>Controle pessoal</span>
@@ -36,106 +32,54 @@
             <div class="menu-title">MENU PRINCIPAL</div>
 
             <nav class="menu">
-
-                <a href="#dashboard" class="menu-item active">
-                    <span>▦</span>
-                    Dashboard
-                </a>
-
-                <a href="#transacoes" class="menu-item">
-                    <span>↔</span>
-                    Transações
-                </a>
-
-                <a href="/contas-fixas" class="menu-item">
-                    <span>▣</span>
-                    Contas Fixas
-                </a>
-
-                <a href="/cartoes" class="menu-item">
-                    <span>💳</span>
-                    Cartões de crédito
-                </a>
-
-                <a href="#nova-transacao" class="menu-item">
-                    <span>＋</span>
-                    Nova movimentação
-                </a>
-
-                <a href="#relatorios" class="menu-item">
-                    <span>▤</span>
-                    Relatórios
-                </a>
-
+                <a href="#dashboard" class="menu-item active"><span>▦</span>Dashboard</a>
+                <a href="#transacoes" class="menu-item"><span>↔</span>Transações</a>
+                <a href="/contas-fixas" class="menu-item"><span>▣</span>Contas Fixas</a>
+                <a href="/cartoes" class="menu-item"><span>💳</span>Cartões de crédito</a>
+                <a href="#nova-transacao" class="menu-item"><span>＋</span>Nova movimentação</a>
+                <a href="#relatorios" class="menu-item"><span>▤</span>Relatórios</a>
             </nav>
 
             <div class="sidebar-bottom">
-
                 <div class="user-card">
                     <div class="user-avatar">U</div>
-
                     <div>
                         <strong>Meu usuário</strong>
                         <span>Conta pessoal</span>
                     </div>
                 </div>
 
-                <button
-                    id="btnSair"
-                    class="btn-sair"
-                    type="button"
-                    onclick="sairDaConta()"
-                >
+                <button id="btnSair" class="btn-sair" type="button" onclick="sairDaConta()">
                     <span class="sair-icon">↪</span>
                     <span>Sair da conta</span>
                 </button>
-
             </div>
-
         </aside>
 
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
         <main class="main-content">
 
-            <button
-                type="button"
-                class="mobile-menu-button"
-                id="mobileMenuButton"
-                aria-label="Abrir menu"
-                aria-expanded="false"
-                aria-controls="sidebar"
-            >
+            <button type="button" class="mobile-menu-button" id="mobileMenuButton"
+                aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar">
                 <span></span>
                 <span></span>
                 <span></span>
             </button>
 
             <header class="topbar">
-
                 <div>
                     <h1>Dashboard</h1>
                     <p>Acompanhe sua vida financeira.</p>
                 </div>
 
                 <div class="topbar-actions">
+                    <input type="month" id="mesFiltro" class="month-input">
 
-                    <input
-                        type="month"
-                        id="mesFiltro"
-                        class="month-input"
-                    >
-
-                    <button
-                        class="btn-primary"
-                        type="button"
-                        onclick="irParaFormulario()"
-                    >
+                    <button class="btn-primary" type="button" onclick="irParaFormulario()">
                         + Nova transação
                     </button>
-
                 </div>
-
             </header>
 
             <section id="dashboard">
@@ -147,84 +91,51 @@
                     </div>
                 </div>
 
+                <!-- QUATRO CARDS -->
                 <div class="cards">
 
-                    <!-- RESULTADO DO MÊS - PRIMEIRO CARD -->
-
                     <div class="card result-card">
-
                         <div class="card-top">
                             <span>Resultado do mês</span>
                             <div class="card-icon blue">◈</div>
                         </div>
-
-                        <h2 id="saldoMes" class="green-text">
-                            R$ 0,00
-                        </h2>
-
+                        <h2 id="saldoMes" class="green-text">R$ 0,00</h2>
                         <p>Receitas menos despesas</p>
-
                     </div>
 
-                    <!-- SALDO TOTAL -->
-
-                    <div class="card balance-card">
-
-                        <div class="card-top">
-                            <span>Saldo total</span>
-                            <div class="card-icon">R$</div>
-                        </div>
-
-                        <h2 id="saldoTotal" class="green-text">
-                            R$ 0,00
-                        </h2>
-
-                        <p>Resultado acumulado</p>
-
-                    </div>
-
-                    <!-- RECEITAS -->
-
-                    <div class="card">
-
-                        <div class="card-top">
-                            <span>Receitas do mês</span>
-                            <div class="card-icon green">↗</div>
-                        </div>
-
-                        <h2 id="receitasMes" class="green-text">
-                            R$ 0,00
-                        </h2>
-
-                        <p>Dinheiro que entrou</p>
-
-                    </div>
-
-                    <!-- DESPESAS -->
-
-                    <div class="card">
-
+                    <div class="card card-despesas">
                         <div class="card-top">
                             <span>Despesas do mês</span>
                             <div class="card-icon red">↘</div>
                         </div>
-
-                        <h2 id="despesasMes" class="red-text">
-                            R$ 0,00
-                        </h2>
-
+                        <h2 id="despesasMes" class="red-text">R$ 0,00</h2>
                         <p>Dinheiro que saiu</p>
+                    </div>
 
+                    <div class="card">
+                        <div class="card-top">
+                            <span>Receitas do mês</span>
+                            <div class="card-icon green">↗</div>
+                        </div>
+                        <h2 id="receitasMes" class="green-text">R$ 0,00</h2>
+                        <p>Dinheiro que entrou</p>
+                    </div>
+
+                    <div class="card balance-card">
+                        <div class="card-top">
+                            <span>Saldo total</span>
+                            <div class="card-icon">R$</div>
+                        </div>
+                        <h2 id="saldoTotal" class="green-text">R$ 0,00</h2>
+                        <p>Resultado acumulado</p>
                     </div>
 
                 </div>
 
                 <!-- GRÁFICOS -->
-
                 <div class="charts-grid" id="relatorios">
 
                     <div class="panel">
-
                         <div class="panel-header">
                             <div>
                                 <h3>Receitas x Despesas</h3>
@@ -233,12 +144,10 @@
                         </div>
 
                         <div class="comparison-chart">
-
                             <div class="chart-info">
                                 <span>Receitas</span>
                                 <strong id="graficoReceitasValor">R$ 0,00</strong>
                             </div>
-
                             <div class="progress-track">
                                 <div id="barraReceitas" class="progress-fill green-fill"></div>
                             </div>
@@ -247,17 +156,13 @@
                                 <span>Despesas</span>
                                 <strong id="graficoDespesasValor">R$ 0,00</strong>
                             </div>
-
                             <div class="progress-track">
                                 <div id="barraDespesas" class="progress-fill red-fill"></div>
                             </div>
-
                         </div>
-
                     </div>
 
                     <div class="panel">
-
                         <div class="panel-header">
                             <div>
                                 <h3>Despesas por categoria</h3>
@@ -266,30 +171,21 @@
                         </div>
 
                         <div class="category-chart">
-
                             <div id="graficoCategorias" class="donut">
-
                                 <div class="donut-center">
                                     <strong id="totalCategorias">R$ 0,00</strong>
                                     <span>Total gasto</span>
                                 </div>
-
                             </div>
-
                             <div id="legendaCategorias" class="legend"></div>
-
                         </div>
-
                     </div>
 
                 </div>
-
             </section>
 
             <!-- NOVA MOVIMENTAÇÃO -->
-
             <section id="nova-transacao" class="panel form-panel">
-
                 <div class="panel-header">
                     <div>
                         <h3>Nova movimentação</h3>
@@ -298,24 +194,15 @@
                 </div>
 
                 <form id="formTransacao">
-
                     <div class="form-grid">
 
                         <div class="form-group">
                             <label for="descricao">Descrição</label>
-
-                            <input
-                                type="text"
-                                id="descricao"
-                                placeholder="Ex: Salário, mercado..."
-                                maxlength="200"
-                                required
-                            >
+                            <input type="text" id="descricao" placeholder="Ex: Salário, mercado..." maxlength="200" required>
                         </div>
 
                         <div class="form-group">
                             <label for="tipo">Tipo</label>
-
                             <select id="tipo" required>
                                 <option value="receita">Receita</option>
                                 <option value="despesa">Despesa</option>
@@ -329,16 +216,8 @@
 
                         <div class="form-group">
                             <label for="valor">Valor (R$)</label>
-
-                            <input
-                                type="number"
-                                id="valor"
-                                placeholder="0,00"
-                                min="0.01"
-                                max="9999999999.99"
-                                step="0.01"
-                                required
-                            >
+                            <input type="number" id="valor" placeholder="0,00" min="0.01"
+                                max="9999999999.99" step="0.01" required>
                         </div>
 
                         <div class="form-group">
@@ -348,7 +227,6 @@
 
                         <div class="form-group" id="grupoFormaPagamento" hidden>
                             <label for="formaPagamento">Forma de pagamento</label>
-
                             <select id="formaPagamento">
                                 <option value="pix">Pix</option>
                                 <option value="debito">Cartão de débito</option>
@@ -358,7 +236,6 @@
 
                         <div class="form-group" id="grupoCartao" hidden>
                             <label for="cartaoSelecionado">Cartão de crédito</label>
-
                             <select id="cartaoSelecionado">
                                 <option value="">Selecione um cartão</option>
                             </select>
@@ -366,91 +243,43 @@
 
                         <div class="form-group" id="grupoParcelas" hidden>
                             <label for="quantidadeParcelas">Quantidade de parcelas</label>
-
-                            <input
-                                type="number"
-                                id="quantidadeParcelas"
-                                min="1"
-                                max="60"
-                                step="1"
-                                value="1"
-                            >
+                            <input type="number" id="quantidadeParcelas" min="1" max="60" step="1" value="1">
                         </div>
 
                     </div>
 
                     <div class="form-actions">
-
-                        <button type="reset" class="btn-secondary">
-                            Limpar
-                        </button>
-
-                        <button
-                            type="submit"
-                            class="btn-primary"
-                            id="btnSalvar"
-                        >
-                            Salvar movimentação
-                        </button>
-
+                        <button type="reset" class="btn-secondary">Limpar</button>
+                        <button type="submit" class="btn-primary" id="btnSalvar">Salvar movimentação</button>
                     </div>
 
                     <p id="mensagemFormulario" class="form-message"></p>
-
                 </form>
-
             </section>
 
             <!-- TRANSAÇÕES -->
-
             <section id="transacoes" class="panel transactions-panel">
-
                 <div class="panel-header transactions-header">
-
                     <div>
                         <h3>Movimentações recentes</h3>
                         <p>Histórico financeiro</p>
                     </div>
 
                     <div class="transaction-actions">
-
                         <select id="filtroTipo" class="filter-select">
                             <option value="">Todas</option>
                             <option value="receita">Receitas</option>
                             <option value="despesa">Despesas</option>
                         </select>
 
-                        <button
-                            type="button"
-                            class="btn-excel"
-                            onclick="exportarExcel()"
-                        >
-                            ↓ Exportar Excel
-                        </button>
-
-                        <button
-                            type="button"
-                            class="btn-import"
-                            onclick="document.getElementById('arquivoExcel').click()"
-                        >
-                            ↑ Importar Excel
-                        </button>
-
-                        <input
-                            type="file"
-                            id="arquivoExcel"
-                            accept=".xlsx"
-                            hidden
-                        >
-
+                        <button type="button" class="btn-excel" onclick="exportarExcel()">↓ Exportar Excel</button>
+                        <button type="button" class="btn-import" onclick="document.getElementById('arquivoExcel').click()">↑ Importar Excel</button>
+                        <input type="file" id="arquivoExcel" accept=".xlsx" hidden>
                     </div>
-
                 </div>
 
                 <div class="table-container">
-
                     <table>
-
                         <thead>
                             <tr>
                                 <th>Descrição</th>
@@ -461,19 +290,13 @@
                                 <th>Ações</th>
                             </tr>
                         </thead>
-
                         <tbody id="tabelaTransacoes">
                             <tr>
-                                <td colspan="6" class="empty">
-                                    Carregando movimentações...
-                                </td>
+                                <td colspan="6" class="empty">Carregando movimentações...</td>
                             </tr>
                         </tbody>
-
                     </table>
-
                 </div>
-
             </section>
 
             <footer>
@@ -481,17 +304,13 @@
             </footer>
 
         </main>
-
     </div>
 
     <script src="/js/sidebar.js"></script>
     <script src="/js/app.js"></script>
 
-    <!-- CONTROLE DO MENU MOBILE -->
-
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-
             const botao = document.getElementById("mobileMenuButton");
             const sidebar = document.getElementById("sidebar");
             const overlay = document.getElementById("sidebarOverlay");
@@ -502,7 +321,6 @@
                 sidebar.classList.add("sidebar-open");
                 overlay.classList.add("overlay-visible");
                 document.body.classList.add("menu-open");
-
                 botao.setAttribute("aria-expanded", "true");
                 botao.setAttribute("aria-label", "Fechar menu");
             };
@@ -511,15 +329,12 @@
                 sidebar.classList.remove("sidebar-open");
                 overlay.classList.remove("overlay-visible");
                 document.body.classList.remove("menu-open");
-
                 botao.setAttribute("aria-expanded", "false");
                 botao.setAttribute("aria-label", "Abrir menu");
             };
 
             botao.addEventListener("click", () => {
-                sidebar.classList.contains("sidebar-open")
-                    ? fecharMenu()
-                    : abrirMenu();
+                sidebar.classList.contains("sidebar-open") ? fecharMenu() : abrirMenu();
             });
 
             overlay.addEventListener("click", fecharMenu);
@@ -535,9 +350,7 @@
             window.addEventListener("resize", () => {
                 if (window.innerWidth > 800) fecharMenu();
             });
-
         });
     </script>
-
 </body>
 </html>
