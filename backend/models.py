@@ -30,6 +30,23 @@ class Usuario(Base):
 
     ativo = Column(Boolean, default=True, nullable=False)
 
+    # Recuperação de senha
+    codigo_recuperacao_hash = Column(String(255), nullable=True)
+    codigo_recuperacao_expira = Column(DateTime(timezone=True), nullable=True)
+    codigo_recuperacao_tentativas = Column(Integer, default=0, nullable=False)
+
+    # Controle de solicitações
+    codigo_recuperacao_solicitado_em = Column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    codigo_recuperacao_solicitacoes = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
     criado_em = Column(
         DateTime(timezone=True),
         server_default=func.now()

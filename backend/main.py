@@ -77,6 +77,9 @@ app.mount(
 # =====================================
 # PÁGINAS
 # =====================================
+@app.get("/recuperar-senha", include_in_schema=False)
+def pagina_recuperar_senha():
+    return FileResponse(FRONTEND_DIR / "recuperar-senha.html")
 
 @app.get("/login", include_in_schema=False)
 def pagina_login():
