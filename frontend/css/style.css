@@ -1698,3 +1698,53 @@ footer {
 .cards .result-card h2.red-text {
     color: #ef4444 !important;
 }
+/* Filtros de movimentações */
+.transaction-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-select {
+    min-width: 145px;
+    max-width: 100%;
+}
+
+.movement-tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 3px 7px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.tag-prevista {
+    background: #78350f;
+    color: #fcd34d;
+}
+
+.tag-cartao {
+    background: #1e3a8a;
+    color: #bfdbfe;
+}
+
+@media (max-width: 800px) {
+    .transaction-actions {
+        width: 100%;
+    }
+
+    .transaction-actions select {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+}
+/* Títulos dos cards maiores no celular */
+@media (max-width: 800px) {
+    .cards .card-top > span {
+        font-size: 17px !important;
+        font-weight: 800 !important;
+        line-height: 1.3;
+    }
+}
