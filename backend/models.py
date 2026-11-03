@@ -270,3 +270,40 @@ class CompraCartao(Base):
         DateTime(timezone=True),
         server_default=func.now()
     )
+# =====================================
+# ORÇAMENTOS MENSAIS POR CATEGORIA
+# =====================================
+
+class Orcamento(Base):
+    __tablename__ = "orcamentos"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "usuario_id",
+            "ano",
+            "mes",
+            "categoria",
+            name="uq_orcamento_usuario_mes_categoria"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    usuario_id = Column(
+        Integer,
+        ForeignKey("usuarios.id"),
+        nullable=False,
+        index=True
+    )
+
+    categoria = Column(String(100), nullable=False)
+
+    ano = Column(Integer, nullable=False)
+    mes = Column(Integer, nullable=False)
+
+    valor_limite_centavos = Column(Integer, nullable=False)
+
+    criado_em = Column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
