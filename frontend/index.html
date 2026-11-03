@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -35,6 +36,7 @@
                 <a href="#dashboard" class="menu-item active"><span>▦</span>Dashboard</a>
                 <a href="#transacoes" class="menu-item"><span>↔</span>Transações</a>
                 <a href="/contas-fixas" class="menu-item"><span>▣</span>Contas Fixas</a>
+                <a href="#orcamentos" class="menu-item"><span>▤</span>Orçamentos</a>
                 <a href="/cartoes" class="menu-item"><span>💳</span>Cartões de crédito</a>
                 <a href="#nova-transacao" class="menu-item"><span>＋</span>Nova movimentação</a>
                 <a href="#relatorios" class="menu-item"><span>▤</span>Relatórios</a>
@@ -91,7 +93,6 @@
                     </div>
                 </div>
 
-                <!-- QUATRO CARDS -->
                 <div class="cards">
 
                     <div class="card result-card">
@@ -132,7 +133,6 @@
 
                 </div>
 
-                <!-- GRÁFICOS -->
                 <div class="charts-grid" id="relatorios">
 
                     <div class="panel">
@@ -179,6 +179,76 @@
                             </div>
                             <div id="legendaCategorias" class="legend"></div>
                         </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- ORÇAMENTOS MENSAIS RECOLHÍVEIS -->
+            <section id="orcamentos" class="panel orcamentos-panel">
+
+                <div class="orcamentos-cabecalho">
+                    <div>
+                        <h3>Orçamentos mensais</h3>
+                        <p>Defina limites e acompanhe seus gastos.</p>
+                    </div>
+
+                    <button
+                        type="button"
+                        id="btnExpandirOrcamentos"
+                        class="btn-expandir-orcamentos"
+                        aria-expanded="false"
+                        aria-controls="conteudoOrcamentos"
+                    >
+                        <span id="textoExpandirOrcamentos">Expandir</span>
+                        <span id="iconeExpandirOrcamentos">⌄</span>
+                    </button>
+                </div>
+
+                <div id="conteudoOrcamentos" hidden>
+
+                    <form id="formOrcamento">
+                        <div class="form-grid">
+
+                            <div class="form-group">
+                                <label for="orcamentoCategoria">Categoria</label>
+                                <select id="orcamentoCategoria" required>
+                                    <option value="">Selecione uma categoria</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="orcamentoValor">Limite mensal (R$)</label>
+                                <input
+                                    type="number"
+                                    id="orcamentoValor"
+                                    min="0.01"
+                                    max="9999999999.99"
+                                    step="0.01"
+                                    placeholder="Ex: 500,00"
+                                    required
+                                >
+                            </div>
+
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="reset" class="btn-secondary">Limpar</button>
+                            <button type="submit" class="btn-primary" id="btnSalvarOrcamento">
+                                Salvar orçamento
+                            </button>
+                        </div>
+
+                        <p id="mensagemOrcamento" class="form-message"></p>
+                    </form>
+
+                    <div class="orcamentos-lista-header">
+                        <h3>Orçamentos do mês</h3>
+                        <span id="totalOrcamentos">0 categorias</span>
+                    </div>
+
+                    <div id="listaOrcamentos" class="orcamentos-lista">
+                        <p class="empty">Carregando orçamentos...</p>
                     </div>
 
                 </div>

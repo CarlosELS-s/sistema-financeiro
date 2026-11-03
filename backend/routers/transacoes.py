@@ -26,9 +26,11 @@ from models import (
     CartaoCredito,
     CompraCartao,
     FaturaCartao,
+    Orcamento,
 )
 from schemas import TransacaoCreate, TransacaoResponse
 from auth import get_usuario_atual
+from pydantic import BaseModel, Field
 
 router = APIRouter(
     prefix="/api",
@@ -1143,3 +1145,205 @@ async def importar_excel(
     finally:
         if "planilha_excel" in locals():
             planilha_excel.close()
+
+
+# =====================================
+# ORÇAMENTOS MENSAIS POR CATEGORIA
+# =====================================
+
+class OrcamentoCreate(BaseModel):
+    categoria: str = Field(min_length=1, max_length=100)
+    ano: int = Field(ge=2000, le=2100)
+    mes: int = Field(ge=1, le=12)
+    valor_limite: Decimal = Field(
+        gt=0,
+        le=9999999999.99
+    )
+
+
+@router.post("/orcamentos")
+def salvar_orcamento(
+    dados: OrcamentoCreate,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
+):
+    categoria = dados.categoria.strip()
+
+    if not categoria:
+        raise HTTPException(
+            400,
+            "Informe uma categoria."
+        )
+
+    valor_centavos = para_centavos(dados.valor_limite)
+
+    if valor_centavos <= 0:
+        raise HTTPException(
+            400,
+            "O limite deve ser maior que zero."
+        )
+
+    orcamento = db.query(Orcamento).filter(
+        Orcamento.usuario_id == usuario.id,
+        Orcamento.categoria == categoria,
+        Orcamento.ano == dados.ano,
+        Orcamento.mes == dados.mes
+    ).first()
+
+    if orcamento:
+        orcamento.valor_limite_centavos = valor_centavos
+        mensagem = "Orçamento atualizado com sucesso!"
+    else:
+        orcamento = Orcamento(
+            usuario_id=usuario.id,
+            categoria=categoria,
+            ano=dados.ano,
+            mes=dados.mes,
+            valor_limite_centavos=valor_centavos
+        )
+
+        db.add(orcamento)
+        mensagem = "Orçamento cadastrado com sucesso!"
+
+    try:
+        db.commit()
+        db.refresh(orcamento)
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            500,
+            "Não foi possível salvar o orçamento."
+        )
+
+    return {
+        "mensagem": mensagem,
+        "id": orcamento.id,
+        "categoria": orcamento.categoria,
+        "ano": orcamento.ano,
+        "mes": orcamento.mes,
+        "valor_limite": orcamento.valor_limite_centavos / 100
+    }
+
+
+@router.get("/orcamentos")
+def listar_orcamentos(
+    mes: str | None = None,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
+):
+    if mes is None:
+        mes = date.today().strftime("%Y-%m")
+
+    ano, numero_mes = validar_mes(mes)
+    inicio, fim = periodo_mes(ano, numero_mes)
+
+    orcamentos = db.query(Orcamento).filter(
+        Orcamento.usuario_id == usuario.id,
+        Orcamento.ano == ano,
+        Orcamento.mes == numero_mes
+    ).order_by(
+        Orcamento.categoria.asc()
+    ).all()
+
+    pagamentos_faturas = subquery_pagamentos_usuario(
+        usuario.id,
+        db
+    )
+
+    despesas_normais = db.query(
+        Transacao.categoria,
+        func.coalesce(
+            func.sum(Transacao.valor_centavos), 0
+        )
+    ).filter(
+        Transacao.usuario_id == usuario.id,
+        Transacao.tipo == "despesa",
+        Transacao.data >= inicio,
+        Transacao.data < fim,
+        ~Transacao.id.in_(pagamentos_faturas)
+    ).group_by(
+        Transacao.categoria
+    ).all()
+
+    gastos = {}
+
+    for categoria, valor in despesas_normais:
+        gastos[categoria or "Outros"] = int(valor or 0)
+
+    despesas_cartao = db.query(
+        CompraCartao.categoria,
+        func.coalesce(
+            func.sum(CompraCartao.valor_centavos), 0
+        )
+    ).join(
+        FaturaCartao,
+        CompraCartao.fatura_id == FaturaCartao.id
+    ).join(
+        CartaoCredito,
+        FaturaCartao.cartao_id == CartaoCredito.id
+    ).filter(
+        CartaoCredito.usuario_id == usuario.id,
+        FaturaCartao.ano == ano,
+        FaturaCartao.mes == numero_mes
+    ).group_by(
+        CompraCartao.categoria
+    ).all()
+
+    for categoria, valor in despesas_cartao:
+        nome = categoria or "Outros"
+
+        gastos[nome] = (
+            gastos.get(nome, 0) + int(valor or 0)
+        )
+
+    resultado = []
+
+    for orcamento in orcamentos:
+        limite = orcamento.valor_limite_centavos
+        gasto = gastos.get(orcamento.categoria, 0)
+        restante = limite - gasto
+
+        resultado.append({
+            "id": orcamento.id,
+            "categoria": orcamento.categoria,
+            "ano": orcamento.ano,
+            "mes": orcamento.mes,
+            "limite": limite / 100,
+            "gasto": gasto / 100,
+            "restante": restante / 100,
+            "percentual": round(
+                (gasto / limite) * 100,
+                2
+            ),
+            "ultrapassou": gasto > limite
+        })
+
+    return {
+        "mes": mes,
+        "orcamentos": resultado
+    }
+
+
+@router.delete("/orcamentos/{orcamento_id}")
+def excluir_orcamento(
+    orcamento_id: int,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
+):
+    orcamento = db.query(Orcamento).filter(
+        Orcamento.id == orcamento_id,
+        Orcamento.usuario_id == usuario.id
+    ).first()
+
+    if not orcamento:
+        raise HTTPException(
+            404,
+            "Orçamento não encontrado."
+        )
+
+    db.delete(orcamento)
+    db.commit()
+
+    return {
+        "mensagem": "Orçamento excluído com sucesso."
+    }

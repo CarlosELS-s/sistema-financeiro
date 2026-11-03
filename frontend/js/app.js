@@ -206,9 +206,13 @@ document.addEventListener("DOMContentLoaded", () => {
     carregarTransacoes();
     carregarCartoes();
 
+    carregarCategoriasOrcamento();
+    carregarOrcamentos();
+
+    configurarOrcamentosRecolhiveis();
+
     mesFiltro?.addEventListener("change", atualizarTela);
 
-    // Eventos dos filtros de movimentações
     ["filtroTipo", "filtroCategoria", "filtroOrigem"].forEach(id => {
         document.getElementById(id)?.addEventListener(
             "change",
@@ -227,6 +231,11 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("formTransacao")?.addEventListener(
         "submit",
         salvarTransacao
+    );
+
+    document.getElementById("formOrcamento")?.addEventListener(
+        "submit",
+        salvarOrcamento
     );
 
     document.getElementById("arquivoExcel")?.addEventListener(
@@ -249,7 +258,69 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     );
 
+    document.getElementById("formOrcamento")?.addEventListener(
+        "reset",
+        () => {
+            setTimeout(() => {
+                carregarCategoriasOrcamento();
+
+                const mensagem = document.getElementById("mensagemOrcamento");
+
+                if (mensagem) {
+                    mensagem.textContent = "";
+                }
+            }, 0);
+        }
+    );
 });
+
+// ======================================
+// ORÇAMENTOS RECOLHÍVEIS
+// ======================================
+
+function configurarOrcamentosRecolhiveis() {
+    const botao = document.getElementById("btnExpandirOrcamentos");
+    const conteudo = document.getElementById("conteudoOrcamentos");
+    const texto = document.getElementById("textoExpandirOrcamentos");
+    const icone = document.getElementById("iconeExpandirOrcamentos");
+
+    if (!botao || !conteudo) return;
+
+    // Começa sempre recolhido.
+    conteudo.hidden = true;
+
+    botao.setAttribute("aria-expanded", "false");
+
+    if (texto) {
+        texto.textContent = "Expandir";
+    }
+
+    if (icone) {
+        icone.textContent = "⌄";
+    }
+
+    botao.addEventListener("click", () => {
+        const expandido =
+            botao.getAttribute("aria-expanded") === "true";
+
+        const novoEstado = !expandido;
+
+        conteudo.hidden = !novoEstado;
+
+        botao.setAttribute(
+            "aria-expanded",
+            String(novoEstado)
+        );
+
+        if (texto) {
+            texto.textContent = novoEstado ? "Recolher" : "Expandir";
+        }
+
+        if (icone) {
+            icone.textContent = novoEstado ? "⌃" : "⌄";
+        }
+    });
+}
 
 // ======================================
 // PAGAMENTO E CARTÕES
@@ -352,6 +423,7 @@ async function carregarCartoes() {
 function atualizarTela() {
     carregarDashboard();
     carregarTransacoes();
+    carregarOrcamentos();
 }
 
 // ======================================
@@ -447,8 +519,6 @@ async function carregarDashboard() {
         const saldoComPrevisao =
             Number(dados.saldo_mes || 0) - totalContasPendentes;
 
-        // SALDO TOTAL
-
         const saldoTotalElemento =
             document.getElementById("saldoTotal");
 
@@ -469,8 +539,6 @@ async function carregarDashboard() {
             );
         }
 
-        // RESULTADO DO MÊS
-
         const saldoMesElemento =
             document.getElementById("saldoMes");
 
@@ -489,24 +557,16 @@ async function carregarDashboard() {
             );
         }
 
-        // RECEITAS
-
         document.getElementById("receitasMes").textContent =
             formatarMoeda(dados.receitas_mes);
 
-        // DESPESAS
-
         document.getElementById("despesasMes").textContent =
             formatarMoeda(despesasComPrevisao);
-
-        // GRÁFICO DE COMPARAÇÃO
 
         atualizarGraficoComparacao(
             Number(dados.receitas_mes || 0),
             despesasComPrevisao
         );
-
-        // DESPESAS POR CATEGORIA
 
         const categoriasAgrupadas = new Map();
 
@@ -684,7 +744,6 @@ async function carregarTransacoes() {
             ...contasPendentes
         ];
 
-        // Identificar a origem de cada movimentação
         movimentacoes = movimentacoes.map(item => ({
             ...item,
             origem: item.prevista
@@ -694,7 +753,6 @@ async function carregarTransacoes() {
                     : "transacao"
         }));
 
-        // Atualizar as opções de categoria
         const selectCategoria =
             document.getElementById("filtroCategoria");
 
@@ -723,28 +781,24 @@ async function carregarTransacoes() {
             }
         }
 
-        // FILTRO POR TIPO
         if (tipo) {
             movimentacoes = movimentacoes.filter(
                 item => item.tipo === tipo
             );
         }
 
-        // FILTRO POR CATEGORIA
         if (categoria) {
             movimentacoes = movimentacoes.filter(
                 item => (item.categoria || "Outros") === categoria
             );
         }
 
-        // FILTRO POR ORIGEM
         if (origem) {
             movimentacoes = movimentacoes.filter(
                 item => item.origem === origem
             );
         }
 
-        // Ordenar por data
         movimentacoes.sort((a, b) => {
             return (b.data || "").localeCompare(a.data || "");
         });
@@ -1169,4 +1223,258 @@ function sairDaConta() {
     limparSessao();
 
     window.location.replace("/login");
+}
+
+// ======================================
+// ORÇAMENTOS MENSAIS POR CATEGORIA
+// ======================================
+
+function carregarCategoriasOrcamento() {
+    const select = document.getElementById("orcamentoCategoria");
+
+    if (!select) return;
+
+    const categoriaAtual = select.value;
+
+    select.innerHTML = `
+        <option value="">Selecione uma categoria</option>
+        ${categorias.despesa.map(categoria => `
+            <option value="${escaparHTML(categoria)}">
+                ${escaparHTML(categoria)}
+            </option>
+        `).join("")}
+    `;
+
+    if (categorias.despesa.includes(categoriaAtual)) {
+        select.value = categoriaAtual;
+    }
+}
+
+async function carregarOrcamentos() {
+    const lista = document.getElementById("listaOrcamentos");
+    const campoMes = document.getElementById("mesFiltro");
+
+    if (!lista || !campoMes?.value) return;
+
+    lista.innerHTML = '<p class="empty">Carregando orçamentos...</p>';
+
+    try {
+        const mes = campoMes.value;
+
+        const dados = await requisicao(
+            `${API_URL}/orcamentos?mes=${encodeURIComponent(mes)}`
+        );
+
+        const orcamentos = dados.orcamentos || [];
+
+        const contador = document.getElementById("totalOrcamentos");
+
+        if (contador) {
+            contador.textContent =
+                `${orcamentos.length} ${orcamentos.length === 1 ? "categoria" : "categorias"}`;
+        }
+
+        if (orcamentos.length === 0) {
+            lista.innerHTML = `
+                <p class="empty">
+                    Nenhum orçamento cadastrado para este mês.
+                </p>
+            `;
+            return;
+        }
+
+        lista.innerHTML = "";
+
+        orcamentos.forEach(orcamento => {
+            const percentual = Math.max(
+                0,
+                Number(orcamento.percentual || 0)
+            );
+
+            const ultrapassou = Boolean(orcamento.ultrapassou);
+            const percentualVisual = Math.min(percentual, 100);
+            const restante = Number(orcamento.restante || 0);
+
+            const card = document.createElement("div");
+
+            card.className = "orcamento-card";
+
+            card.innerHTML = `
+                <div class="orcamento-topo">
+                    <div>
+                        <strong>${escaparHTML(orcamento.categoria)}</strong>
+
+                        <span class="orcamento-status ${ultrapassou ? "ultrapassou" : "dentro-limite"}">
+                            ${ultrapassou ? "Limite ultrapassado" : "Dentro do limite"}
+                        </span>
+                    </div>
+
+                    <div class="orcamento-acoes">
+                        <button
+                            type="button"
+                            class="btn-editar-orcamento"
+                            title="Editar orçamento"
+                        >
+                            Editar
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn-excluir-orcamento"
+                            title="Excluir orçamento"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+
+                <div class="orcamento-valores">
+                    <div>
+                        <span>Gasto</span>
+                        <strong>${formatarMoeda(orcamento.gasto)}</strong>
+                    </div>
+
+                    <div>
+                        <span>Limite</span>
+                        <strong>${formatarMoeda(orcamento.limite)}</strong>
+                    </div>
+
+                    <div>
+                        <span>${ultrapassou ? "Excedido" : "Restante"}</span>
+                        <strong class="${ultrapassou ? "red-text" : "green-text"}">
+                            ${formatarMoeda(Math.abs(restante))}
+                        </strong>
+                    </div>
+                </div>
+
+                <div class="orcamento-barra">
+                    <div
+                        class="orcamento-progresso ${ultrapassou ? "barra-estourada" : ""}"
+                        style="width: ${percentualVisual}%"
+                    ></div>
+                </div>
+
+                <div class="orcamento-rodape">
+                    <span>${percentual.toFixed(1)}% utilizado</span>
+                </div>
+            `;
+
+            card.querySelector(".btn-editar-orcamento").addEventListener(
+                "click",
+                () => editarOrcamento(orcamento)
+            );
+
+            card.querySelector(".btn-excluir-orcamento").addEventListener(
+                "click",
+                () => excluirOrcamento(orcamento.id)
+            );
+
+            lista.appendChild(card);
+        });
+
+    } catch (erro) {
+        console.error("Erro ao carregar orçamentos:", erro);
+
+        lista.innerHTML = `
+            <p class="empty">
+                Não foi possível carregar os orçamentos.
+            </p>
+        `;
+    }
+}
+
+async function salvarOrcamento(evento) {
+    evento.preventDefault();
+
+    const botao = document.getElementById("btnSalvarOrcamento");
+    const mensagem = document.getElementById("mensagemOrcamento");
+
+    const categoria = document.getElementById("orcamentoCategoria").value;
+    const valor = Number(document.getElementById("orcamentoValor").value);
+    const mes = document.getElementById("mesFiltro").value;
+
+    if (!categoria || !mes || !Number.isFinite(valor) || valor <= 0) {
+        mensagem.textContent = "Preencha a categoria e um limite válido.";
+        mensagem.className = "form-message error";
+        return;
+    }
+
+    const [ano, numeroMes] = mes.split("-").map(Number);
+
+    botao.disabled = true;
+    botao.textContent = "Salvando...";
+
+    try {
+        await requisicao(`${API_URL}/orcamentos`, {
+            method: "POST",
+            body: JSON.stringify({
+                categoria,
+                ano,
+                mes: numeroMes,
+                valor_limite: valor
+            })
+        });
+
+        mensagem.textContent = "Orçamento salvo com sucesso!";
+        mensagem.className = "form-message success";
+
+        document.getElementById("formOrcamento").reset();
+
+        await carregarOrcamentos();
+
+    } catch (erro) {
+        mensagem.textContent = erro.message;
+        mensagem.className = "form-message error";
+
+    } finally {
+        botao.disabled = false;
+        botao.textContent = "Salvar orçamento";
+    }
+}
+
+function editarOrcamento(orcamento) {
+    const select = document.getElementById("orcamentoCategoria");
+    const valor = document.getElementById("orcamentoValor");
+
+    select.value = orcamento.categoria;
+    valor.value = Number(orcamento.limite).toFixed(2);
+
+    const conteudo = document.getElementById("conteudoOrcamentos");
+    const botao = document.getElementById("btnExpandirOrcamentos");
+
+    if (conteudo?.hidden) {
+        botao?.click();
+    }
+
+    document.getElementById("orcamentos").scrollIntoView({
+        behavior: "smooth"
+    });
+
+    valor.focus();
+
+    const mensagem = document.getElementById("mensagemOrcamento");
+
+    mensagem.textContent =
+        "Altere o limite e clique em Salvar orçamento.";
+
+    mensagem.className = "form-message";
+}
+
+async function excluirOrcamento(id) {
+    const confirmar = confirm(
+        "Deseja realmente excluir este orçamento?"
+    );
+
+    if (!confirmar) return;
+
+    try {
+        await requisicao(`${API_URL}/orcamentos/${id}`, {
+            method: "DELETE"
+        });
+
+        await carregarOrcamentos();
+
+    } catch (erro) {
+        alert(erro.message);
+    }
 }
