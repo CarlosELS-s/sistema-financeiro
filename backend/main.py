@@ -128,3 +128,4 @@ def verificar_api():
         "mensagem": "Sistema Financeiro funcionando!"
     }
 #python -m uvicorn main:app --reload
+# AIDAODALJDDHAJ
