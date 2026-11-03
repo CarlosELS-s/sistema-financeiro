@@ -1,3 +1,4 @@
+
 const API_URL = "/api";
 
 // ======================================
@@ -207,10 +208,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     mesFiltro?.addEventListener("change", atualizarTela);
 
-    document.getElementById("filtroTipo")?.addEventListener(
-        "change",
-        carregarTransacoes
-    );
+    // Eventos dos filtros de movimentações
+    ["filtroTipo", "filtroCategoria", "filtroOrigem"].forEach(id => {
+        document.getElementById(id)?.addEventListener(
+            "change",
+            carregarTransacoes
+        );
+    });
 
     document.getElementById("tipo")?.addEventListener(
         "change",
@@ -639,29 +643,31 @@ function atualizarGraficoCategorias(dados) {
 }
 
 // ======================================
-// LISTAR MOVIMENTAÇÕES
+// LISTAR E FILTRAR MOVIMENTAÇÕES
 // ======================================
 
 async function carregarTransacoes() {
     const mes = document.getElementById("mesFiltro")?.value;
     const tipo = document.getElementById("filtroTipo")?.value || "";
+    const categoria = document.getElementById("filtroCategoria")?.value || "";
+    const origem = document.getElementById("filtroOrigem")?.value || "";
+
     const tabela = document.getElementById("tabelaTransacoes");
 
     if (!tabela) return;
 
     tabela.innerHTML = `
         <tr>
-            <td colspan="6" class="empty">
-                Carregando...
-            </td>
+            <td colspan="6" class="empty">Carregando...</td>
         </tr>
     `;
 
     try {
         const parametros = new URLSearchParams();
 
-        if (mes) parametros.append("mes", mes);
-        if (tipo) parametros.append("tipo", tipo);
+        if (mes) {
+            parametros.append("mes", mes);
+        }
 
         const [transacoes, contasPendentes] = await Promise.all([
             requisicao(
@@ -678,17 +684,69 @@ async function carregarTransacoes() {
             ...contasPendentes
         ];
 
+        // Identificar a origem de cada movimentação
+        movimentacoes = movimentacoes.map(item => ({
+            ...item,
+            origem: item.prevista
+                ? "conta-fixa"
+                : item.origem === "cartao"
+                    ? "cartao"
+                    : "transacao"
+        }));
+
+        // Atualizar as opções de categoria
+        const selectCategoria =
+            document.getElementById("filtroCategoria");
+
+        if (selectCategoria) {
+            const categoriaAtual = categoria;
+
+            const categoriasDisponiveis = [
+                ...new Set(
+                    movimentacoes.map(item =>
+                        item.categoria || "Outros"
+                    )
+                )
+            ].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+            selectCategoria.innerHTML = `
+                <option value="">Todas as categorias</option>
+                ${categoriasDisponiveis.map(nome => `
+                    <option value="${escaparHTML(nome)}">
+                        ${escaparHTML(nome)}
+                    </option>
+                `).join("")}
+            `;
+
+            if (categoriasDisponiveis.includes(categoriaAtual)) {
+                selectCategoria.value = categoriaAtual;
+            }
+        }
+
+        // FILTRO POR TIPO
         if (tipo) {
             movimentacoes = movimentacoes.filter(
                 item => item.tipo === tipo
             );
         }
 
-        movimentacoes.sort((a, b) => {
-            const dataA = a.data || "";
-            const dataB = b.data || "";
+        // FILTRO POR CATEGORIA
+        if (categoria) {
+            movimentacoes = movimentacoes.filter(
+                item => (item.categoria || "Outros") === categoria
+            );
+        }
 
-            return dataB.localeCompare(dataA);
+        // FILTRO POR ORIGEM
+        if (origem) {
+            movimentacoes = movimentacoes.filter(
+                item => item.origem === origem
+            );
+        }
+
+        // Ordenar por data
+        movimentacoes.sort((a, b) => {
+            return (b.data || "").localeCompare(a.data || "");
         });
 
         tabela.innerHTML = "";
@@ -697,11 +755,10 @@ async function carregarTransacoes() {
             tabela.innerHTML = `
                 <tr>
                     <td colspan="6" class="empty">
-                        Nenhuma movimentação encontrada.
+                        Nenhuma movimentação encontrada com esses filtros.
                     </td>
                 </tr>
             `;
-
             return;
         }
 
@@ -719,29 +776,13 @@ async function carregarTransacoes() {
 
             if (ehPrevista) {
                 identificacao = `
-                    <span style="
-                        display:inline-block;
-                        margin-left:6px;
-                        padding:3px 7px;
-                        border-radius:5px;
-                        font-size:10px;
-                        background:#78350f;
-                        color:#fcd34d;
-                    ">
+                    <span class="movement-tag tag-prevista">
                         Prevista
                     </span>
                 `;
             } else if (ehParcelaCartao) {
                 identificacao = `
-                    <span style="
-                        display:inline-block;
-                        margin-left:6px;
-                        padding:3px 7px;
-                        border-radius:5px;
-                        font-size:10px;
-                        background:#1e3a8a;
-                        color:#bfdbfe;
-                    ">
+                    <span class="movement-tag tag-cartao">
                         Parcela do cartão
                     </span>
                 `;
@@ -773,7 +814,7 @@ async function carregarTransacoes() {
                 </td>
 
                 <td class="transaction-category">
-                    ${escaparHTML(transacao.categoria)}
+                    ${escaparHTML(transacao.categoria || "Outros")}
                 </td>
 
                 <td class="transaction-date">
@@ -790,9 +831,7 @@ async function carregarTransacoes() {
                     ${sinal} ${formatarMoeda(transacao.valor)}
                 </td>
 
-                <td>
-                    ${acao}
-                </td>
+                <td>${acao}</td>
             `;
 
             if (!ehPrevista && !ehParcelaCartao) {

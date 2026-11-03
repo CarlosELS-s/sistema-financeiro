@@ -266,15 +266,35 @@
                     </div>
 
                     <div class="transaction-actions">
+
                         <select id="filtroTipo" class="filter-select">
-                            <option value="">Todas</option>
+                            <option value="">Todos os tipos</option>
                             <option value="receita">Receitas</option>
                             <option value="despesa">Despesas</option>
                         </select>
 
-                        <button type="button" class="btn-excel" onclick="exportarExcel()">↓ Exportar Excel</button>
-                        <button type="button" class="btn-import" onclick="document.getElementById('arquivoExcel').click()">↑ Importar Excel</button>
+                        <select id="filtroCategoria" class="filter-select">
+                            <option value="">Todas as categorias</option>
+                        </select>
+
+                        <select id="filtroOrigem" class="filter-select">
+                            <option value="">Todas as origens</option>
+                            <option value="transacao">Movimentações normais</option>
+                            <option value="conta-fixa">Contas fixas</option>
+                            <option value="cartao">Cartão de crédito</option>
+                        </select>
+
+                        <button type="button" class="btn-excel" onclick="exportarExcel()">
+                            ↓ Exportar Excel
+                        </button>
+
+                        <button type="button" class="btn-import"
+                            onclick="document.getElementById('arquivoExcel').click()">
+                            ↑ Importar Excel
+                        </button>
+
                         <input type="file" id="arquivoExcel" accept=".xlsx" hidden>
+
                     </div>
                 </div>
 
