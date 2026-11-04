@@ -1172,6 +1172,98 @@ class OrcamentoCreate(BaseModel):
     cartoes_ids: list[int] | None = None
 
 
+def obter_orcamento_usuario(
+    db: Session,
+    orcamento_id: int,
+    usuario_id: int
+):
+    orcamento = db.query(Orcamento).filter(
+        Orcamento.id == orcamento_id,
+        Orcamento.usuario_id == usuario_id
+    ).first()
+
+    if not orcamento:
+        raise HTTPException(
+            status_code=404,
+            detail="Orçamento não encontrado."
+        )
+
+    return orcamento
+
+
+def criar_orcamentos_fixos_do_mes(
+    db: Session,
+    usuario_id: int,
+    ano: int,
+    mes: int
+):
+    """
+    Procura o orçamento mais recente de cada categoria
+    antes do mês consultado.
+
+    Se o último orçamento daquela categoria estiver fixado,
+    cria uma cópia para o mês atual.
+    """
+
+    orcamentos_existentes = db.query(Orcamento).filter(
+        Orcamento.usuario_id == usuario_id,
+        Orcamento.ano == ano,
+        Orcamento.mes == mes
+    ).all()
+
+    categorias_existentes = {
+        item.categoria for item in orcamentos_existentes
+    }
+
+    anteriores = db.query(Orcamento).filter(
+        Orcamento.usuario_id == usuario_id,
+        (
+            (Orcamento.ano < ano)
+            |
+            (
+                (Orcamento.ano == ano)
+                & (Orcamento.mes < mes)
+            )
+        )
+    ).order_by(
+        Orcamento.ano.desc(),
+        Orcamento.mes.desc(),
+        Orcamento.id.desc()
+    ).all()
+
+    ultimo_por_categoria = {}
+
+    for anterior in anteriores:
+        if anterior.categoria not in ultimo_por_categoria:
+            ultimo_por_categoria[anterior.categoria] = anterior
+
+    novos = []
+
+    for categoria, anterior in ultimo_por_categoria.items():
+
+        if categoria in categorias_existentes:
+            continue
+
+        if not anterior.fixado:
+            continue
+
+        novo = Orcamento(
+            usuario_id=usuario_id,
+            categoria=anterior.categoria,
+            ano=ano,
+            mes=mes,
+            valor_limite_centavos=anterior.valor_limite_centavos,
+            cartoes_ids=anterior.cartoes_ids,
+            fixado=True
+        )
+
+        db.add(novo)
+        novos.append(novo)
+
+    if novos:
+        db.flush()
+
+
 @router.post("/orcamentos")
 def salvar_orcamento(
     dados: OrcamentoCreate,
@@ -1220,33 +1312,48 @@ def salvar_orcamento(
             "O limite deve ser maior que zero."
         )
 
-    orcamento = db.query(Orcamento).filter(
-        Orcamento.usuario_id == usuario.id,
-        Orcamento.categoria == categoria,
-        Orcamento.ano == dados.ano,
-        Orcamento.mes == dados.mes
-    ).first()
-
-    if orcamento:
-        orcamento.valor_limite_centavos = valor_centavos
-        orcamento.cartoes_ids = cartoes_texto
-        mensagem = "Orçamento atualizado com sucesso!"
-    else:
-        orcamento = Orcamento(
-            usuario_id=usuario.id,
-            categoria=categoria,
-            ano=dados.ano,
-            mes=dados.mes,
-            valor_limite_centavos=valor_centavos,
-            cartoes_ids=cartoes_texto
-        )
-
-        db.add(orcamento)
-        mensagem = "Orçamento cadastrado com sucesso!"
-
     try:
+        orcamento = db.query(Orcamento).filter(
+            Orcamento.usuario_id == usuario.id,
+            Orcamento.categoria == categoria,
+            Orcamento.ano == dados.ano,
+            Orcamento.mes == dados.mes
+        ).first()
+
+        if orcamento:
+            orcamento.valor_limite_centavos = valor_centavos
+            orcamento.cartoes_ids = cartoes_texto
+
+            mensagem = "Orçamento atualizado com sucesso!"
+
+        else:
+            orcamento = Orcamento(
+                usuario_id=usuario.id,
+                categoria=categoria,
+                ano=dados.ano,
+                mes=dados.mes,
+                valor_limite_centavos=valor_centavos,
+                cartoes_ids=cartoes_texto,
+                fixado=False
+            )
+
+            db.add(orcamento)
+
+            mensagem = "Orçamento cadastrado com sucesso!"
+
         db.commit()
         db.refresh(orcamento)
+
+        return {
+            "mensagem": mensagem,
+            "id": orcamento.id,
+            "categoria": orcamento.categoria,
+            "ano": orcamento.ano,
+            "mes": orcamento.mes,
+            "valor_limite": orcamento.valor_limite_centavos / 100,
+            "cartoes_ids": cartoes_ids,
+            "fixado": orcamento.fixado
+        }
 
     except Exception:
         db.rollback()
@@ -1256,16 +1363,51 @@ def salvar_orcamento(
             "Não foi possível salvar o orçamento."
         )
 
-    return {
-        "mensagem": mensagem,
-        "id": orcamento.id,
-        "categoria": orcamento.categoria,
-        "ano": orcamento.ano,
-        "mes": orcamento.mes,
-        "valor_limite": orcamento.valor_limite_centavos / 100,
-        "cartoes_ids": cartoes_ids
-    }
 
+# =====================================
+# FIXAR / DESAFIXAR ORÇAMENTO
+# =====================================
+
+@router.post("/orcamentos/{orcamento_id}/fixar")
+def alternar_orcamento_fixo(
+    orcamento_id: int,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
+):
+    orcamento = obter_orcamento_usuario(
+        db,
+        orcamento_id,
+        usuario.id
+    )
+
+    try:
+        orcamento.fixado = not orcamento.fixado
+
+        db.commit()
+        db.refresh(orcamento)
+
+        return {
+            "mensagem": (
+                "Orçamento fixado para os próximos meses!"
+                if orcamento.fixado
+                else "Orçamento desafixado com sucesso!"
+            ),
+            "id": orcamento.id,
+            "fixado": orcamento.fixado
+        }
+
+    except Exception:
+        db.rollback()
+
+        raise HTTPException(
+            500,
+            "Não foi possível alterar o orçamento."
+        )
+
+
+# =====================================
+# LISTAR ORÇAMENTOS
+# =====================================
 
 @router.get("/orcamentos")
 def listar_orcamentos(
@@ -1278,6 +1420,24 @@ def listar_orcamentos(
 
     ano, numero_mes = validar_mes(mes)
     inicio, fim = periodo_mes(ano, numero_mes)
+
+    try:
+        # Cria os orçamentos recorrentes que ainda não existem.
+        criar_orcamentos_fixos_do_mes(
+            db,
+            usuario.id,
+            ano,
+            numero_mes
+        )
+
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            500,
+            "Não foi possível carregar os orçamentos."
+        )
 
     orcamentos = db.query(Orcamento).filter(
         Orcamento.usuario_id == usuario.id,
@@ -1348,10 +1508,6 @@ def listar_orcamentos(
                 + compra.valor_centavos
             )
 
-    gastos["Parcelados"] = sum(
-        gastos_parcelados_por_cartao.values()
-    )
-
     resultado = []
 
     for orcamento in orcamentos:
@@ -1392,7 +1548,8 @@ def listar_orcamentos(
                 2
             ),
             "ultrapassou": gasto > limite,
-            "cartoes_ids": cartoes_selecionados
+            "cartoes_ids": cartoes_selecionados,
+            "fixado": orcamento.fixado
         })
 
     return {
@@ -1401,22 +1558,21 @@ def listar_orcamentos(
     }
 
 
+# =====================================
+# EXCLUIR ORÇAMENTO
+# =====================================
+
 @router.delete("/orcamentos/{orcamento_id}")
 def excluir_orcamento(
     orcamento_id: int,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_usuario_atual)
 ):
-    orcamento = db.query(Orcamento).filter(
-        Orcamento.id == orcamento_id,
-        Orcamento.usuario_id == usuario.id
-    ).first()
-
-    if not orcamento:
-        raise HTTPException(
-            404,
-            "Orçamento não encontrado."
-        )
+    orcamento = obter_orcamento_usuario(
+        db,
+        orcamento_id,
+        usuario.id
+    )
 
     db.delete(orcamento)
     db.commit()

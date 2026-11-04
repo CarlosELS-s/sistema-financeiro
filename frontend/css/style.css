@@ -2182,3 +2182,63 @@ thead th:nth-child(5) {
 .opcao-todos-cartoes {
     font-weight: 600;
 }
+
+/* =========================================
+   BOTÕES DOS ORÇAMENTOS
+========================================= */
+
+.orcamento-card .orcamento-acoes {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.orcamento-card .orcamento-acoes .btn-fixar-orcamento {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+
+    padding: 9px 15px;
+    min-height: 36px;
+
+    color: #4ade80;
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    border-radius: 10px;
+
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+
+    cursor: pointer;
+    transition: background .2s, transform .2s, box-shadow .2s;
+}
+
+.orcamento-card .orcamento-acoes .btn-fixar-orcamento:hover {
+    background: rgba(34, 197, 94, 0.24);
+    border-color: #22c55e;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(34, 197, 94, 0.15);
+}
+
+/* Quando estiver fixado */
+.orcamento-card .orcamento-acoes .btn-fixar-orcamento[title="Desafixar orçamento"] {
+    color: #60a5fa;
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.orcamento-card .orcamento-acoes .btn-fixar-orcamento[title="Desafixar orçamento"]:hover {
+    background: rgba(59, 130, 246, 0.24);
+    border-color: #3b82f6;
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.15);
+}
+
+@media (max-width: 600px) {
+    .orcamento-card .orcamento-acoes .btn-fixar-orcamento {
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+}

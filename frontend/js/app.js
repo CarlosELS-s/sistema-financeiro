@@ -1232,6 +1232,7 @@ async function carregarOrcamentos() {
             const percentualVisual = Math.min(percentual, 100);
             const ultrapassou = Boolean(orcamento.ultrapassou);
             const restante = Number(orcamento.restante || 0);
+            const fixado = Boolean(orcamento.fixado);
 
             const card = document.createElement("div");
             card.className = "orcamento-card";
@@ -1240,20 +1241,44 @@ async function carregarOrcamentos() {
                 <div class="orcamento-topo">
                     <div>
                         <strong>${escaparHTML(orcamento.categoria)}</strong>
+
                         <span class="orcamento-status ${ultrapassou ? "ultrapassou" : "dentro-limite"}">
                             ${ultrapassou ? "Limite ultrapassado" : "Dentro do limite"}
                         </span>
+
+                        ${fixado ? `
+                            <span class="orcamento-status dentro-limite">
+                                📌 Fixo mensal
+                            </span>
+                        ` : ""}
                     </div>
+
                     <div class="orcamento-acoes">
+                        <button type="button"
+                            class="btn-fixar-orcamento"
+                            title="${fixado ? "Desafixar orçamento" : "Fixar orçamento"}">
+                            ${fixado ? "📌 Desafixar" : "📌 Fixar"}
+                        </button>
+
                         <button type="button" class="btn-editar-orcamento"
                             title="Editar orçamento">Editar</button>
+
                         <button type="button" class="btn-excluir-orcamento"
                             title="Excluir orçamento">✕</button>
                     </div>
                 </div>
+
                 <div class="orcamento-valores">
-                    <div><span>Gasto</span><strong>${formatarMoeda(orcamento.gasto)}</strong></div>
-                    <div><span>Limite</span><strong>${formatarMoeda(orcamento.limite)}</strong></div>
+                    <div>
+                        <span>Gasto</span>
+                        <strong>${formatarMoeda(orcamento.gasto)}</strong>
+                    </div>
+
+                    <div>
+                        <span>Limite</span>
+                        <strong>${formatarMoeda(orcamento.limite)}</strong>
+                    </div>
+
                     <div>
                         <span>${ultrapassou ? "Excedido" : "Restante"}</span>
                         <strong class="${ultrapassou ? "red-text" : "green-text"}">
@@ -1261,14 +1286,21 @@ async function carregarOrcamentos() {
                         </strong>
                     </div>
                 </div>
+
                 <div class="orcamento-barra">
                     <div class="orcamento-progresso ${ultrapassou ? "barra-estourada" : ""}"
                         style="width:${percentualVisual}%"></div>
                 </div>
+
                 <div class="orcamento-rodape">
                     <span>${percentual.toFixed(1)}% utilizado</span>
                 </div>
             `;
+
+            card.querySelector(".btn-fixar-orcamento").addEventListener(
+                "click",
+                () => alternarOrcamentoFixo(orcamento.id)
+            );
 
             card.querySelector(".btn-editar-orcamento").addEventListener(
                 "click",
@@ -1282,11 +1314,30 @@ async function carregarOrcamentos() {
 
             lista.appendChild(card);
         });
+
     } catch (erro) {
         console.error("Erro ao carregar orçamentos:", erro);
+
         lista.innerHTML = `
             <p class="empty">Não foi possível carregar os orçamentos.</p>
         `;
+    }
+}
+// ======================================
+// FIXAR E DESAFIXAR ORÇAMENTO
+// ======================================
+
+async function alternarOrcamentoFixo(id) {
+    try {
+        await requisicao(`${API_URL}/orcamentos/${id}/fixar`, {
+            method: "POST"
+        });
+
+        await carregarOrcamentos();
+
+    } catch (erro) {
+        console.error("Erro ao alterar orçamento fixo:", erro);
+        alert(erro.message);
     }
 }
 

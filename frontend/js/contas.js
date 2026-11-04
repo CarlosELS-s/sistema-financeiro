@@ -24,7 +24,6 @@ function verificarAutenticacaoContas() {
     return true;
 }
 
-
 // =====================================
 // UTILITÁRIOS
 // =====================================
@@ -56,6 +55,38 @@ function escaparConta(valor) {
     })[caractere]);
 }
 
+// =====================================
+// CATEGORIAS
+// =====================================
+
+function opcoesCategoriasConta(categoriaSelecionada = "") {
+    const categorias = [
+        "Alimentação",
+        "Moradia",
+        "Transporte",
+        "Saúde",
+        "Educação",
+        "Lazer",
+        "Compras",
+        "Contas",
+        "Assinaturas",
+        "Parcelados",
+        "Outros"
+    ];
+
+    return `
+        <option value="">Selecione uma categoria</option>
+
+        ${categorias.map(categoria => `
+            <option
+                value="${escaparConta(categoria)}"
+                ${categoria === categoriaSelecionada ? "selected" : ""}
+            >
+                ${escaparConta(categoria)}
+            </option>
+        `).join("")}
+    `;
+}
 
 // =====================================
 // REQUISIÇÕES COM JWT
@@ -65,6 +96,7 @@ async function requisicaoContas(url, opcoes = {}) {
     const token = obterTokenContas();
 
     if (!token) {
+        encerrarSessaoContas();
         throw new Error("Token não encontrado. Faça login novamente.");
     }
 
@@ -80,10 +112,6 @@ async function requisicaoContas(url, opcoes = {}) {
         headers.set("Content-Type", "application/json");
     }
 
-    console.log("REQUISIÇÃO CONTAS:", url);
-    console.log("TOKEN ENCONTRADO:", Boolean(token));
-    console.log("AUTHORIZATION ENVIADO:", headers.has("Authorization"));
-
     let resposta;
 
     try {
@@ -94,6 +122,11 @@ async function requisicaoContas(url, opcoes = {}) {
     } catch (erro) {
         console.error("Erro de conexão:", erro);
         throw new Error("Não foi possível conectar ao servidor.");
+    }
+
+    if (resposta.status === 401) {
+        encerrarSessaoContas();
+        throw new Error("Sessão expirada. Faça login novamente.");
     }
 
     const dados = await resposta.json().catch(() => ({}));
@@ -111,7 +144,6 @@ async function requisicaoContas(url, opcoes = {}) {
     return dados;
 }
 
-
 // =====================================
 // INICIALIZAÇÃO
 // =====================================
@@ -128,14 +160,13 @@ document.addEventListener("DOMContentLoaded", () => {
         `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
 
     document.getElementById("inicioConta").value = dataAtualConta();
-    document.getElementById("categoriaConta").value = "Conta";
+    document.getElementById("categoriaConta").value = "Contas";
 
     mes.addEventListener("change", carregarContasFixas);
     formulario.addEventListener("submit", cadastrarContaFixa);
 
     carregarContasFixas();
 });
-
 
 // =====================================
 // CARREGAR CONTAS
@@ -189,7 +220,7 @@ async function carregarContasFixas() {
                 <td class="transaction-name">
                     <strong>${escaparConta(conta.nome)}</strong>
                     <br>
-                    <small>${escaparConta(conta.categoria || "Conta")}</small>
+                    <small>${escaparConta(conta.categoria || "Contas")}</small>
 
                     ${
                         conta.atrasada
@@ -218,18 +249,18 @@ async function carregarContasFixas() {
                         ${
                             estaPaga
                                 ? ""
-                                : `<button class="btn-primary btn-pagar"
+                                : `<button type="button" class="btn-primary btn-pagar"
                                     data-id="${conta.id}">
                                     Pagar
                                 </button>`
                         }
 
-                        <button class="btn-editar-conta"
+                        <button type="button" class="btn-editar-conta"
                             data-id="${conta.conta_fixa_id}">
                             Editar
                         </button>
 
-                        <button class="btn-remover-conta"
+                        <button type="button" class="btn-remover-conta"
                             data-id="${conta.conta_fixa_id}"
                             data-nome="${escaparConta(conta.nome)}">
                             Remover
@@ -287,7 +318,6 @@ async function carregarContasFixas() {
     }
 }
 
-
 // =====================================
 // CADASTRAR CONTA
 // =====================================
@@ -301,8 +331,7 @@ async function cadastrarContaFixa(evento) {
 
     const dados = {
         nome: document.getElementById("nomeConta").value.trim(),
-        categoria:
-            document.getElementById("categoriaConta").value.trim() || "Conta",
+        categoria: document.getElementById("categoriaConta").value,
         descricao:
             document.getElementById("descricaoConta").value.trim() || null,
         valor: Number(document.getElementById("valorConta").value),
@@ -310,6 +339,24 @@ async function cadastrarContaFixa(evento) {
         valor_padrao: true,
         data_inicio: dataAtualConta()
     };
+
+    if (!dados.categoria) {
+        mensagem.textContent = "Selecione uma categoria.";
+        mensagem.className = "form-message error";
+        return;
+    }
+
+    if (!dados.nome || dados.nome.length < 2) {
+        mensagem.textContent = "Informe um nome válido para a conta.";
+        mensagem.className = "form-message error";
+        return;
+    }
+
+    if (!Number.isFinite(dados.valor) || dados.valor <= 0) {
+        mensagem.textContent = "Informe um valor válido.";
+        mensagem.className = "form-message error";
+        return;
+    }
 
     try {
         await requisicaoContas(API_CONTAS, {
@@ -322,7 +369,7 @@ async function cadastrarContaFixa(evento) {
 
         formulario.reset();
 
-        document.getElementById("categoriaConta").value = "Conta";
+        document.getElementById("categoriaConta").value = "Contas";
         document.getElementById("inicioConta").value = dataAtualConta();
 
         cadastro.open = false;
@@ -334,7 +381,6 @@ async function cadastrarContaFixa(evento) {
         mensagem.className = "form-message error";
     }
 }
-
 
 // =====================================
 // EDITAR CONTA
@@ -376,12 +422,9 @@ async function editarContaNaPagina(id) {
 
                         <div>
                             <label>Categoria</label>
-                            <input
-                                type="text"
-                                class="editar-categoria"
-                                maxlength="100"
-                                value="${escaparConta(conta.categoria || "Conta")}"
-                            >
+                            <select class="editar-categoria" required>
+                                ${opcoesCategoriasConta(conta.categoria || "Contas")}
+                            </select>
                         </div>
 
                         <div>
@@ -407,11 +450,11 @@ async function editarContaNaPagina(id) {
                     </div>
 
                     <div class="acoes-editor-conta">
-                        <button class="btn-primary salvar-edicao">
+                        <button type="button" class="btn-primary salvar-edicao">
                             Salvar alterações
                         </button>
 
-                        <button class="cancelar-edicao">
+                        <button type="button" class="cancelar-edicao">
                             Cancelar
                         </button>
                     </div>
@@ -428,16 +471,24 @@ async function editarContaNaPagina(id) {
             "click",
             async () => {
                 const nome = linha.querySelector(".editar-nome").value.trim();
+
                 const categoria =
-                    linha.querySelector(".editar-categoria").value.trim() || "Conta";
+                    linha.querySelector(".editar-categoria").value;
+
                 const valor = Number(
                     linha.querySelector(".editar-valor").value
                 );
+
                 const descricao =
                     linha.querySelector(".editar-descricao").value.trim();
 
                 if (nome.length < 2) {
                     alert("Informe um nome válido.");
+                    return;
+                }
+
+                if (!categoria) {
+                    alert("Selecione uma categoria.");
                     return;
                 }
 
@@ -472,7 +523,6 @@ async function editarContaNaPagina(id) {
     }
 }
 
-
 // =====================================
 // REMOVER CONTA
 // =====================================
@@ -500,7 +550,6 @@ async function removerConta(id, nome) {
         alert("Não foi possível remover: " + erro.message);
     }
 }
-
 
 // =====================================
 // PAGAR CONTA

@@ -21,7 +21,6 @@
 <div class="app">
 
     <!-- MENU LATERAL -->
-
     <aside class="sidebar" id="sidebar">
 
         <div class="logo">
@@ -72,18 +71,15 @@
         </nav>
 
         <!-- USUÁRIO E SAÍDA -->
-
         <div class="sidebar-bottom">
 
             <div class="user-card">
-
                 <div class="user-avatar">U</div>
 
                 <div>
                     <strong>Meu usuário</strong>
                     <span>Conta pessoal</span>
                 </div>
-
             </div>
 
             <button
@@ -99,16 +95,13 @@
 
     </aside>
 
-    <!-- FUNDO ESCURO DO MENU MOBILE -->
-
+    <!-- FUNDO DO MENU MOBILE -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- CONTEÚDO PRINCIPAL -->
-
     <main class="main-content">
 
-        <!-- BOTÃO DE TRÊS BARRINHAS -->
-
+        <!-- BOTÃO DO MENU MOBILE -->
         <button
             type="button"
             class="mobile-menu-button"
@@ -123,7 +116,6 @@
         </button>
 
         <!-- CABEÇALHO -->
-
         <header class="topbar">
 
             <div>
@@ -146,7 +138,6 @@
         <section class="panel contas-panel">
 
             <!-- RESUMO -->
-
             <div class="contas-resumo">
 
                 <div class="conta-resumo-card">
@@ -167,7 +158,6 @@
             </div>
 
             <!-- LISTA DE CONTAS -->
-
             <div class="panel-header contas-list-header">
 
                 <div>
@@ -177,8 +167,7 @@
 
             </div>
 
-            <!-- CADASTRO RECOLHIDO -->
-
+            <!-- CADASTRO -->
             <details id="cadastroConta" class="cadastro-conta">
 
                 <summary>
@@ -189,6 +178,7 @@
 
                     <div class="form-grid">
 
+                        <!-- 1. NOME -->
                         <div class="form-group">
 
                             <label for="nomeConta">
@@ -198,29 +188,40 @@
                             <input
                                 type="text"
                                 id="nomeConta"
-                                maxlength="150"
-                                placeholder="Ex: Energia"
+                                maxlength="200"
+                                placeholder="Ex: Conta de energia"
                                 required
                             >
 
                         </div>
 
+                        <!-- 2. CATEGORIA -->
                         <div class="form-group">
 
                             <label for="categoriaConta">
                                 Categoria
                             </label>
 
-                            <input
-                                type="text"
-                                id="categoriaConta"
-                                maxlength="100"
-                                value="Conta"
-                                required
-                            >
+                            <select id="categoriaConta" required>
+
+                                <option value="">Selecione uma categoria</option>
+                                <option value="Alimentação">Alimentação</option>
+                                <option value="Moradia">Moradia</option>
+                                <option value="Transporte">Transporte</option>
+                                <option value="Saúde">Saúde</option>
+                                <option value="Educação">Educação</option>
+                                <option value="Lazer">Lazer</option>
+                                <option value="Compras">Compras</option>
+                                <option value="Contas">Contas</option>
+                                <option value="Assinaturas">Assinaturas</option>
+                                <option value="Parcelados">Parcelados</option>
+                                <option value="Outros">Outros</option>
+
+                            </select>
 
                         </div>
 
+                        <!-- 3. VALOR -->
                         <div class="form-group">
 
                             <label for="valorConta">
@@ -238,6 +239,7 @@
 
                         </div>
 
+                        <!-- 4. DESCRIÇÃO -->
                         <div class="form-group">
 
                             <label for="descricaoConta">
@@ -255,8 +257,7 @@
 
                     </div>
 
-                    <!-- CAMPOS MANTIDOS PARA COMPATIBILIDADE -->
-
+                    <!-- CAMPOS DE COMPATIBILIDADE -->
                     <input
                         type="hidden"
                         id="inicioConta"
@@ -283,8 +284,7 @@
 
             </details>
 
-            <!-- LISTAGEM -->
-
+            <!-- TABELA -->
             <div class="table-container">
 
                 <table>
@@ -323,12 +323,10 @@
 </div>
 
 <!-- JAVASCRIPT -->
-
 <script src="/js/sidebar.js"></script>
 <script src="/js/contas.js"></script>
 
 <!-- CONTROLE DO MENU MOBILE -->
-
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -357,11 +355,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     botao.addEventListener("click", () => {
+
         if (sidebar.classList.contains("sidebar-open")) {
             fecharMenu();
         } else {
             abrirMenu();
         }
+
     });
 
     overlay.addEventListener("click", fecharMenu);
@@ -371,15 +371,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.addEventListener("keydown", evento => {
+
         if (evento.key === "Escape") {
             fecharMenu();
         }
+
     });
 
     window.addEventListener("resize", () => {
+
         if (window.innerWidth > 800) {
             fecharMenu();
         }
+
     });
 
 });

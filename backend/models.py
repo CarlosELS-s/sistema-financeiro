@@ -304,6 +304,7 @@ class Orcamento(Base):
 
     valor_limite_centavos = Column(Integer, nullable=False)
     cartoes_ids = Column(String(1000), nullable=True)
+    fixado = Column(Boolean, default=False, nullable=False)
 
     criado_em = Column(
         DateTime(timezone=True),
