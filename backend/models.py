@@ -302,7 +302,7 @@ class Orcamento(Base):
     mes = Column(Integer, nullable=False)
 
     valor_limite_centavos = Column(Integer, nullable=False)
-
+    cartoes_ids = Column(String(1000), nullable=True)
     criado_em = Column(
         DateTime(timezone=True),
         server_default=func.now()

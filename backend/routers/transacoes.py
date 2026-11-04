@@ -28,6 +28,7 @@ from models import (
     CompraCartao,
     FaturaCartao,
     Orcamento,
+    ContaMensal
 )
 from schemas import TransacaoCreate, TransacaoResponse
 from auth import get_usuario_atual
@@ -432,8 +433,7 @@ def listar_movimentos(
         ano, numero_mes = validar_mes(mes)
     else:
         hoje = date.today()
-        ano = hoje.year
-        numero_mes = hoje.month
+        ano, numero_mes = hoje.year, hoje.month
 
     query = db.query(Transacao).filter(
         Transacao.usuario_id == usuario.id
@@ -444,16 +444,12 @@ def listar_movimentos(
 
     if mes:
         inicio, fim = periodo_mes(ano, numero_mes)
-
         query = query.filter(
             Transacao.data >= inicio,
             Transacao.data < fim
         )
 
-    pagamentos_faturas = subquery_pagamentos_usuario(
-        usuario.id,
-        db
-    )
+    pagamentos_faturas = subquery_pagamentos_usuario(usuario.id, db)
 
     transacoes = query.filter(
         ~Transacao.id.in_(pagamentos_faturas)
@@ -474,7 +470,8 @@ def listar_movimentos(
 
     parcelas = db.query(
         CompraCartao,
-        FaturaCartao
+        FaturaCartao,
+        CartaoCredito
     ).join(
         FaturaCartao,
         CompraCartao.fatura_id == FaturaCartao.id
@@ -488,7 +485,7 @@ def listar_movimentos(
     ).all()
 
     if tipo is None or tipo == "despesa":
-        for compra, fatura in parcelas:
+        for compra, fatura, cartao in parcelas:
             movimentos.append({
                 "id": compra.id,
                 "origem": "cartao",
@@ -497,7 +494,8 @@ def listar_movimentos(
                 "categoria": compra.categoria or "Outros",
                 "valor": compra.valor_centavos / 100,
                 "data": compra.data.isoformat(),
-                "vencimento": fatura.vencimento.isoformat()
+                "vencimento": fatura.vencimento.isoformat(),
+                "cartao_nome": cartao.nome
             })
 
     movimentos.sort(
@@ -506,7 +504,6 @@ def listar_movimentos(
     )
 
     return movimentos
-
 
 # =====================================
 # EDITAR TRANSAÇÃO
@@ -568,18 +565,40 @@ def excluir_transacao(
 
     if not transacao:
         raise HTTPException(
-            404,
-            "Transação não encontrada."
+            status_code=404,
+            detail="Movimentação não encontrada."
         )
 
-    db.delete(transacao)
-    db.commit()
+    try:
+        # Localiza a conta mensal vinculada à movimentação.
+        conta_mensal = db.query(ContaMensal).filter(
+            ContaMensal.transacao_id == transacao_id
+        ).first()
 
-    return {
-        "message": "Transação excluída com sucesso."
-    }
+        # Desvincula a movimentação, mas preserva a conta mensal.
+        if conta_mensal:
+            conta_mensal.transacao_id = None
 
+        # Exclui somente a movimentação.
+        db.delete(transacao)
+        db.commit()
 
+        return {
+            "message": "Movimentação excluída com sucesso."
+        }
+
+    except Exception as erro:
+        db.rollback()
+
+        print("\n========== ERRO AO EXCLUIR ==========")
+        print(repr(erro))
+        print("=====================================\n")
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(erro)
+        )
+    
 # =====================================
 # DASHBOARD
 # =====================================
@@ -821,7 +840,8 @@ def exportar_excel(
     # Buscar parcelas das faturas do mês selecionado.
     parcelas = db.query(
         CompraCartao,
-        FaturaCartao
+        FaturaCartao,
+        CartaoCredito
     ).join(
         FaturaCartao,
         CompraCartao.fatura_id == FaturaCartao.id
@@ -1148,10 +1168,6 @@ async def importar_excel(
             planilha_excel.close()
 
 
-# =====================================
-# ORÇAMENTOS MENSAIS POR CATEGORIA
-# =====================================
-
 class OrcamentoCreate(BaseModel):
     categoria: str = Field(min_length=1, max_length=100)
     ano: int = Field(ge=2000, le=2100)
@@ -1160,6 +1176,7 @@ class OrcamentoCreate(BaseModel):
         gt=0,
         le=9999999999.99
     )
+    cartoes_ids: list[int] | None = None
 
 
 @router.post("/orcamentos")
@@ -1171,18 +1188,38 @@ def salvar_orcamento(
     categoria = dados.categoria.strip()
 
     if not categoria:
-        raise HTTPException(
-            400,
-            "Informe uma categoria."
-        )
+        raise HTTPException(400, "Informe uma categoria.")
+
+    cartoes_ids = dados.cartoes_ids
+
+    if categoria == "Parcelados":
+        if cartoes_ids is not None:
+            cartoes = db.query(CartaoCredito).filter(
+                CartaoCredito.usuario_id == usuario.id,
+                CartaoCredito.ativo == True,
+                CartaoCredito.id.in_(cartoes_ids)
+            ).all()
+
+            if len(cartoes) != len(set(cartoes_ids)):
+                raise HTTPException(
+                    400,
+                    "Um ou mais cartões selecionados são inválidos."
+                )
+
+            cartoes_ids = sorted(set(cartoes_ids))
+    else:
+        cartoes_ids = None
+
+    cartoes_texto = (
+        ",".join(str(item) for item in cartoes_ids)
+        if cartoes_ids is not None
+        else None
+    )
 
     valor_centavos = para_centavos(dados.valor_limite)
 
     if valor_centavos <= 0:
-        raise HTTPException(
-            400,
-            "O limite deve ser maior que zero."
-        )
+        raise HTTPException(400, "O limite deve ser maior que zero.")
 
     orcamento = db.query(Orcamento).filter(
         Orcamento.usuario_id == usuario.id,
@@ -1193,6 +1230,7 @@ def salvar_orcamento(
 
     if orcamento:
         orcamento.valor_limite_centavos = valor_centavos
+        orcamento.cartoes_ids = cartoes_texto
         mensagem = "Orçamento atualizado com sucesso!"
     else:
         orcamento = Orcamento(
@@ -1200,9 +1238,9 @@ def salvar_orcamento(
             categoria=categoria,
             ano=dados.ano,
             mes=dados.mes,
-            valor_limite_centavos=valor_centavos
+            valor_limite_centavos=valor_centavos,
+            cartoes_ids=cartoes_texto
         )
-
         db.add(orcamento)
         mensagem = "Orçamento cadastrado com sucesso!"
 
@@ -1211,10 +1249,7 @@ def salvar_orcamento(
         db.refresh(orcamento)
     except Exception:
         db.rollback()
-        raise HTTPException(
-            500,
-            "Não foi possível salvar o orçamento."
-        )
+        raise HTTPException(500, "Não foi possível salvar o orçamento.")
 
     return {
         "mensagem": mensagem,
@@ -1222,7 +1257,8 @@ def salvar_orcamento(
         "categoria": orcamento.categoria,
         "ano": orcamento.ano,
         "mes": orcamento.mes,
-        "valor_limite": orcamento.valor_limite_centavos / 100
+        "valor_limite": orcamento.valor_limite_centavos / 100,
+        "cartoes_ids": cartoes_ids
     }
 
 
@@ -1242,45 +1278,29 @@ def listar_orcamentos(
         Orcamento.usuario_id == usuario.id,
         Orcamento.ano == ano,
         Orcamento.mes == numero_mes
-    ).order_by(
-        Orcamento.categoria.asc()
-    ).all()
+    ).order_by(Orcamento.categoria.asc()).all()
 
-    pagamentos_faturas = subquery_pagamentos_usuario(
-        usuario.id,
-        db
-    )
-
-    # =====================================
-    # DESPESAS NORMAIS
-    # =====================================
+    pagamentos_faturas = subquery_pagamentos_usuario(usuario.id, db)
 
     despesas_normais = db.query(
         Transacao.categoria,
-        func.coalesce(
-            func.sum(Transacao.valor_centavos), 0
-        )
+        func.coalesce(func.sum(Transacao.valor_centavos), 0)
     ).filter(
         Transacao.usuario_id == usuario.id,
         Transacao.tipo == "despesa",
         Transacao.data >= inicio,
         Transacao.data < fim,
         ~Transacao.id.in_(pagamentos_faturas)
-    ).group_by(
-        Transacao.categoria
-    ).all()
+    ).group_by(Transacao.categoria).all()
 
     gastos = {}
 
     for categoria, valor in despesas_normais:
         gastos[categoria or "Outros"] = int(valor or 0)
 
-    # =====================================
-    # DESPESAS DO CARTÃO
-    # =====================================
-
     despesas_cartao = db.query(
-        CompraCartao
+        CompraCartao,
+        CartaoCredito.id
     ).join(
         FaturaCartao,
         CompraCartao.fatura_id == FaturaCartao.id
@@ -1293,51 +1313,54 @@ def listar_orcamentos(
         FaturaCartao.mes == numero_mes
     ).all()
 
-    total_parcelados = 0
+    gastos_parcelados_por_cartao = {}
 
-    for compra in despesas_cartao:
-
-        descricao = compra.descricao or ""
-
-        # Identifica descrições como:
-        # Celular (1/9)
-        # Celular (2/9)
-        # Celular (3/9)
-
+    for compra, cartao_id in despesas_cartao:
         correspondencia = re.search(
             r"\((\d+)/(\d+)\)\s*$",
-            descricao
+            compra.descricao or ""
         )
 
-        if correspondencia:
-            quantidade_parcelas = int(
-                correspondencia.group(2)
+        if correspondencia and int(correspondencia.group(2)) >= 2:
+            gastos_parcelados_por_cartao[cartao_id] = (
+                gastos_parcelados_por_cartao.get(cartao_id, 0)
+                + compra.valor_centavos
+            )
+        else:
+            categoria = compra.categoria or "Outros"
+            gastos[categoria] = (
+                gastos.get(categoria, 0) + compra.valor_centavos
             )
 
-            if quantidade_parcelas >= 2:
-                total_parcelados += compra.valor_centavos
-                continue
-
-        # Compras à vista continuam na categoria original.
-        categoria = compra.categoria or "Outros"
-
-        gastos[categoria] = (
-            gastos.get(categoria, 0)
-            + compra.valor_centavos
-        )
-
-    # Parcelados aparece como uma categoria de orçamento.
-    gastos["Parcelados"] = total_parcelados
-
-    # =====================================
-    # MONTAR RESULTADO
-    # =====================================
+    gastos["Parcelados"] = sum(
+        gastos_parcelados_por_cartao.values()
+    )
 
     resultado = []
 
     for orcamento in orcamentos:
+        cartoes_selecionados = (
+            [
+                int(item)
+                for item in orcamento.cartoes_ids.split(",")
+                if item.strip()
+            ]
+            if orcamento.cartoes_ids is not None
+            else None
+        )
+
+        if orcamento.categoria == "Parcelados":
+            if cartoes_selecionados is None:
+                gasto = sum(gastos_parcelados_por_cartao.values())
+            else:
+                gasto = sum(
+                    gastos_parcelados_por_cartao.get(cartao_id, 0)
+                    for cartao_id in cartoes_selecionados
+                )
+        else:
+            gasto = gastos.get(orcamento.categoria, 0)
+
         limite = orcamento.valor_limite_centavos
-        gasto = gastos.get(orcamento.categoria, 0)
         restante = limite - gasto
 
         resultado.append({
@@ -1348,14 +1371,32 @@ def listar_orcamentos(
             "limite": limite / 100,
             "gasto": gasto / 100,
             "restante": restante / 100,
-            "percentual": round(
-                (gasto / limite) * 100,
-                2
-            ),
-            "ultrapassou": gasto > limite
+            "percentual": round((gasto / limite) * 100, 2),
+            "ultrapassou": gasto > limite,
+            "cartoes_ids": cartoes_selecionados
         })
 
     return {
         "mes": mes,
         "orcamentos": resultado
     }
+
+
+@router.delete("/orcamentos/{orcamento_id}")
+def excluir_orcamento(
+    orcamento_id: int,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
+):
+    orcamento = db.query(Orcamento).filter(
+        Orcamento.id == orcamento_id,
+        Orcamento.usuario_id == usuario.id
+    ).first()
+
+    if not orcamento:
+        raise HTTPException(404, "Orçamento não encontrado.")
+
+    db.delete(orcamento)
+    db.commit()
+
+    return {"mensagem": "Orçamento excluído com sucesso!"}
