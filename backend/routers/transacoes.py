@@ -1,5 +1,6 @@
 
 import calendar
+import re
 
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -1250,6 +1251,10 @@ def listar_orcamentos(
         db
     )
 
+    # =====================================
+    # DESPESAS NORMAIS
+    # =====================================
+
     despesas_normais = db.query(
         Transacao.categoria,
         func.coalesce(
@@ -1270,11 +1275,12 @@ def listar_orcamentos(
     for categoria, valor in despesas_normais:
         gastos[categoria or "Outros"] = int(valor or 0)
 
+    # =====================================
+    # DESPESAS DO CARTÃO
+    # =====================================
+
     despesas_cartao = db.query(
-        CompraCartao.categoria,
-        func.coalesce(
-            func.sum(CompraCartao.valor_centavos), 0
-        )
+        CompraCartao
     ).join(
         FaturaCartao,
         CompraCartao.fatura_id == FaturaCartao.id
@@ -1285,16 +1291,47 @@ def listar_orcamentos(
         CartaoCredito.usuario_id == usuario.id,
         FaturaCartao.ano == ano,
         FaturaCartao.mes == numero_mes
-    ).group_by(
-        CompraCartao.categoria
     ).all()
 
-    for categoria, valor in despesas_cartao:
-        nome = categoria or "Outros"
+    total_parcelados = 0
 
-        gastos[nome] = (
-            gastos.get(nome, 0) + int(valor or 0)
+    for compra in despesas_cartao:
+
+        descricao = compra.descricao or ""
+
+        # Identifica descrições como:
+        # Celular (1/9)
+        # Celular (2/9)
+        # Celular (3/9)
+
+        correspondencia = re.search(
+            r"\((\d+)/(\d+)\)\s*$",
+            descricao
         )
+
+        if correspondencia:
+            quantidade_parcelas = int(
+                correspondencia.group(2)
+            )
+
+            if quantidade_parcelas >= 2:
+                total_parcelados += compra.valor_centavos
+                continue
+
+        # Compras à vista continuam na categoria original.
+        categoria = compra.categoria or "Outros"
+
+        gastos[categoria] = (
+            gastos.get(categoria, 0)
+            + compra.valor_centavos
+        )
+
+    # Parcelados aparece como uma categoria de orçamento.
+    gastos["Parcelados"] = total_parcelados
+
+    # =====================================
+    # MONTAR RESULTADO
+    # =====================================
 
     resultado = []
 
@@ -1321,29 +1358,4 @@ def listar_orcamentos(
     return {
         "mes": mes,
         "orcamentos": resultado
-    }
-
-
-@router.delete("/orcamentos/{orcamento_id}")
-def excluir_orcamento(
-    orcamento_id: int,
-    db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_usuario_atual)
-):
-    orcamento = db.query(Orcamento).filter(
-        Orcamento.id == orcamento_id,
-        Orcamento.usuario_id == usuario.id
-    ).first()
-
-    if not orcamento:
-        raise HTTPException(
-            404,
-            "Orçamento não encontrado."
-        )
-
-    db.delete(orcamento)
-    db.commit()
-
-    return {
-        "mensagem": "Orçamento excluído com sucesso."
     }

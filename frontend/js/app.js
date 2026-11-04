@@ -25,6 +25,7 @@ const categorias = {
         "Compras",
         "Contas",
         "Assinaturas",
+        "Parcelados",
         "Outros"
     ]
 };
