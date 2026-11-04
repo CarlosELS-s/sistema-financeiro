@@ -1,4 +1,3 @@
-
 from datetime import date
 
 from sqlalchemy import (
@@ -270,6 +269,8 @@ class CompraCartao(Base):
         DateTime(timezone=True),
         server_default=func.now()
     )
+
+
 # =====================================
 # ORÇAMENTOS MENSAIS POR CATEGORIA
 # =====================================
@@ -303,6 +304,7 @@ class Orcamento(Base):
 
     valor_limite_centavos = Column(Integer, nullable=False)
     cartoes_ids = Column(String(1000), nullable=True)
+
     criado_em = Column(
         DateTime(timezone=True),
         server_default=func.now()

@@ -1,452 +1,310 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Financeiro | Meu Controle</title>
-
     <link rel="stylesheet" href="/css/style.css">
     <link rel="icon" type="image/png" href="/favicon1.png">
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-
 <body>
-    <div class="app">
+<div class="app">
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">
+            <div class="logo-icon"><img src="/favicon1.png" alt="Meu Financeiro"></div>
+            <div><h2>Meu Financeiro</h2><span>Controle pessoal</span></div>
+        </div>
 
-        <aside class="sidebar" id="sidebar">
-            <div class="logo">
-                <div class="logo-icon">
-                    <img src="/favicon1.png" alt="Meu Financeiro">
+        <div class="menu-title">MENU PRINCIPAL</div>
+
+        <nav class="menu">
+            <a href="#dashboard" class="menu-item active"><span>▦</span>Dashboard</a>
+            <a href="#transacoes" class="menu-item"><span>↔</span>Transações</a>
+            <a href="/contas-fixas" class="menu-item"><span>▣</span>Contas Fixas</a>
+            <a href="#orcamentos" class="menu-item"><span>▤</span>Orçamentos</a>
+            <a href="/cartoes" class="menu-item"><span>💳</span>Cartões de crédito</a>
+            <a href="#nova-transacao" class="menu-item"><span>＋</span>Nova movimentação</a>
+            <a href="#relatorios" class="menu-item"><span>▤</span>Relatórios</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="user-card">
+                <div class="user-avatar">U</div>
+                <div><strong>Meu usuário</strong><span>Conta pessoal</span></div>
+            </div>
+            <button id="btnSair" class="btn-sair" type="button" onclick="sairDaConta()">
+                <span class="sair-icon">↪</span><span>Sair da conta</span>
+            </button>
+        </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <main class="main-content">
+        <button type="button" class="mobile-menu-button" id="mobileMenuButton"
+            aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar">
+            <span></span><span></span><span></span>
+        </button>
+
+        <header class="topbar">
+            <div><h1>Dashboard</h1><p>Acompanhe sua vida financeira.</p></div>
+            <div class="topbar-actions">
+                <input type="month" id="mesFiltro" class="month-input">
+                <button class="btn-primary" type="button" onclick="irParaFormulario()">+ Nova transação</button>
+            </div>
+        </header>
+
+        <section id="dashboard">
+            <div class="section-heading">
+                <div><h2>Visão geral</h2><p>Resumo das suas finanças</p></div>
+            </div>
+
+            <div class="cards">
+                <div class="card result-card">
+                    <div class="card-top"><span>Resultado do mês</span><div class="card-icon blue">◈</div></div>
+                    <h2 id="saldoMes" class="green-text">R$ 0,00</h2>
+                    <p>Receitas menos despesas</p>
                 </div>
-                <div>
-                    <h2>Meu Financeiro</h2>
-                    <span>Controle pessoal</span>
+                <div class="card card-despesas">
+                    <div class="card-top"><span>Despesas do mês</span><div class="card-icon red">↘</div></div>
+                    <h2 id="despesasMes" class="red-text">R$ 0,00</h2>
+                    <p>Dinheiro que saiu</p>
+                </div>
+                <div class="card">
+                    <div class="card-top"><span>Receitas do mês</span><div class="card-icon green">↗</div></div>
+                    <h2 id="receitasMes" class="green-text">R$ 0,00</h2>
+                    <p>Dinheiro que entrou</p>
+                </div>
+                <div class="card balance-card">
+                    <div class="card-top"><span>Saldo total</span><div class="card-icon">R$</div></div>
+                    <h2 id="saldoTotal" class="green-text">R$ 0,00</h2>
+                    <p>Resultado acumulado</p>
                 </div>
             </div>
 
-            <div class="menu-title">MENU PRINCIPAL</div>
-
-            <nav class="menu">
-                <a href="#dashboard" class="menu-item active"><span>▦</span>Dashboard</a>
-                <a href="#transacoes" class="menu-item"><span>↔</span>Transações</a>
-                <a href="/contas-fixas" class="menu-item"><span>▣</span>Contas Fixas</a>
-                <a href="#orcamentos" class="menu-item"><span>▤</span>Orçamentos</a>
-                <a href="/cartoes" class="menu-item"><span>💳</span>Cartões de crédito</a>
-                <a href="#nova-transacao" class="menu-item"><span>＋</span>Nova movimentação</a>
-                <a href="#relatorios" class="menu-item"><span>▤</span>Relatórios</a>
-            </nav>
-
-            <div class="sidebar-bottom">
-                <div class="user-card">
-                    <div class="user-avatar">U</div>
-                    <div>
-                        <strong>Meu usuário</strong>
-                        <span>Conta pessoal</span>
+            <div class="charts-grid" id="relatorios">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div><h3>Receitas x Despesas</h3><p>Comparação do mês selecionado</p></div>
+                    </div>
+                    <div class="comparison-chart">
+                        <div class="chart-info"><span>Receitas</span><strong id="graficoReceitasValor">R$ 0,00</strong></div>
+                        <div class="progress-track"><div id="barraReceitas" class="progress-fill green-fill"></div></div>
+                        <div class="chart-info"><span>Despesas</span><strong id="graficoDespesasValor">R$ 0,00</strong></div>
+                        <div class="progress-track"><div id="barraDespesas" class="progress-fill red-fill"></div></div>
                     </div>
                 </div>
 
-                <button id="btnSair" class="btn-sair" type="button" onclick="sairDaConta()">
-                    <span class="sair-icon">↪</span>
-                    <span>Sair da conta</span>
+                <div class="panel">
+                    <div class="panel-header">
+                        <div><h3>Despesas por categoria</h3><p>Distribuição dos gastos</p></div>
+                    </div>
+                    <div class="category-chart">
+                        <div id="graficoCategorias" class="donut">
+                            <div class="donut-center">
+                                <strong id="totalCategorias">R$ 0,00</strong>
+                                <span>Total gasto</span>
+                            </div>
+                        </div>
+                        <div id="legendaCategorias" class="legend"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="orcamentos" class="panel orcamentos-panel">
+            <div class="orcamentos-cabecalho">
+                <div><h3>Orçamentos mensais</h3><p>Defina limites e acompanhe seus gastos.</p></div>
+                <button type="button" id="btnExpandirOrcamentos" class="btn-expandir-orcamentos"
+                    aria-expanded="false" aria-controls="conteudoOrcamentos">
+                    <span id="textoExpandirOrcamentos">Expandir</span>
+                    <span id="iconeExpandirOrcamentos">⌄</span>
                 </button>
             </div>
-        </aside>
 
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-        <main class="main-content">
-
-            <button type="button" class="mobile-menu-button" id="mobileMenuButton"
-                aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-
-            <header class="topbar">
-                <div>
-                    <h1>Dashboard</h1>
-                    <p>Acompanhe sua vida financeira.</p>
-                </div>
-
-                <div class="topbar-actions">
-                    <input type="month" id="mesFiltro" class="month-input">
-
-                    <button class="btn-primary" type="button" onclick="irParaFormulario()">
-                        + Nova transação
-                    </button>
-                </div>
-            </header>
-
-            <section id="dashboard">
-
-                <div class="section-heading">
-                    <div>
-                        <h2>Visão geral</h2>
-                        <p>Resumo das suas finanças</p>
-                    </div>
-                </div>
-
-                <div class="cards">
-
-                    <div class="card result-card">
-                        <div class="card-top">
-                            <span>Resultado do mês</span>
-                            <div class="card-icon blue">◈</div>
-                        </div>
-                        <h2 id="saldoMes" class="green-text">R$ 0,00</h2>
-                        <p>Receitas menos despesas</p>
-                    </div>
-
-                    <div class="card card-despesas">
-                        <div class="card-top">
-                            <span>Despesas do mês</span>
-                            <div class="card-icon red">↘</div>
-                        </div>
-                        <h2 id="despesasMes" class="red-text">R$ 0,00</h2>
-                        <p>Dinheiro que saiu</p>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-top">
-                            <span>Receitas do mês</span>
-                            <div class="card-icon green">↗</div>
-                        </div>
-                        <h2 id="receitasMes" class="green-text">R$ 0,00</h2>
-                        <p>Dinheiro que entrou</p>
-                    </div>
-
-                    <div class="card balance-card">
-                        <div class="card-top">
-                            <span>Saldo total</span>
-                            <div class="card-icon">R$</div>
-                        </div>
-                        <h2 id="saldoTotal" class="green-text">R$ 0,00</h2>
-                        <p>Resultado acumulado</p>
-                    </div>
-
-                </div>
-
-                <div class="charts-grid" id="relatorios">
-
-                    <div class="panel">
-                        <div class="panel-header">
-                            <div>
-                                <h3>Receitas x Despesas</h3>
-                                <p>Comparação do mês selecionado</p>
-                            </div>
-                        </div>
-
-                        <div class="comparison-chart">
-                            <div class="chart-info">
-                                <span>Receitas</span>
-                                <strong id="graficoReceitasValor">R$ 0,00</strong>
-                            </div>
-                            <div class="progress-track">
-                                <div id="barraReceitas" class="progress-fill green-fill"></div>
-                            </div>
-
-                            <div class="chart-info">
-                                <span>Despesas</span>
-                                <strong id="graficoDespesasValor">R$ 0,00</strong>
-                            </div>
-                            <div class="progress-track">
-                                <div id="barraDespesas" class="progress-fill red-fill"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="panel">
-                        <div class="panel-header">
-                            <div>
-                                <h3>Despesas por categoria</h3>
-                                <p>Distribuição dos gastos</p>
-                            </div>
-                        </div>
-
-                        <div class="category-chart">
-                            <div id="graficoCategorias" class="donut">
-                                <div class="donut-center">
-                                    <strong id="totalCategorias">R$ 0,00</strong>
-                                    <span>Total gasto</span>
-                                </div>
-                            </div>
-                            <div id="legendaCategorias" class="legend"></div>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- ORÇAMENTOS MENSAIS RECOLHÍVEIS -->
-            <section id="orcamentos" class="panel orcamentos-panel">
-
-                <div class="orcamentos-cabecalho">
-                    <div>
-                        <h3>Orçamentos mensais</h3>
-                        <p>Defina limites e acompanhe seus gastos.</p>
-                    </div>
-
-                    <button
-                        type="button"
-                        id="btnExpandirOrcamentos"
-                        class="btn-expandir-orcamentos"
-                        aria-expanded="false"
-                        aria-controls="conteudoOrcamentos"
-                    >
-                        <span id="textoExpandirOrcamentos">Expandir</span>
-                        <span id="iconeExpandirOrcamentos">⌄</span>
-                    </button>
-                </div>
-
-                <div id="conteudoOrcamentos" hidden>
-
-                    <form id="formOrcamento">
-                        <div class="form-grid">
-
-                            <div class="form-group">
-                                <label for="orcamentoCategoria">Categoria</label>
-                                <select id="orcamentoCategoria" required>
-                                    <option value="">Selecione uma categoria</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="orcamentoValor">Limite mensal (R$)</label>
-                                <input
-                                    type="number"
-                                    id="orcamentoValor"
-                                    min="0.01"
-                                    max="9999999999.99"
-                                    step="0.01"
-                                    placeholder="Ex: 500,00"
-                                    required
-                                >
-                            </div>
-
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="reset" class="btn-secondary">Limpar</button>
-                            <button type="submit" class="btn-primary" id="btnSalvarOrcamento">
-                                Salvar orçamento
-                            </button>
-                        </div>
-
-                        <p id="mensagemOrcamento" class="form-message"></p>
-                    </form>
-
-                    <div class="orcamentos-lista-header">
-                        <h3>Orçamentos do mês</h3>
-                        <span id="totalOrcamentos">0 categorias</span>
-                    </div>
-
-                    <div id="listaOrcamentos" class="orcamentos-lista">
-                        <p class="empty">Carregando orçamentos...</p>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- NOVA MOVIMENTAÇÃO -->
-            <section id="nova-transacao" class="panel form-panel">
-                <div class="panel-header">
-                    <div>
-                        <h3>Nova movimentação</h3>
-                        <p>Cadastre uma receita ou despesa.</p>
-                    </div>
-                </div>
-
-                <form id="formTransacao">
+            <div id="conteudoOrcamentos" hidden>
+                <form id="formOrcamento">
                     <div class="form-grid">
-
                         <div class="form-group">
-                            <label for="descricao">Descrição</label>
-                            <input type="text" id="descricao" placeholder="Ex: Salário, mercado..." maxlength="200" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="tipo">Tipo</label>
-                            <select id="tipo" required>
-                                <option value="receita">Receita</option>
-                                <option value="despesa">Despesa</option>
+                            <label for="orcamentoCategoria">Categoria</label>
+                            <select id="orcamentoCategoria" required>
+                                <option value="">Selecione uma categoria</option>
                             </select>
                         </div>
-
                         <div class="form-group">
-                            <label for="categoria">Categoria</label>
-                            <select id="categoria" required></select>
+                            <label for="orcamentoValor">Limite mensal (R$)</label>
+                            <input type="number" id="orcamentoValor" min="0.01"
+                                max="9999999999.99" step="0.01" placeholder="Ex: 500,00" required>
                         </div>
-
-                        <div class="form-group">
-                            <label for="valor">Valor (R$)</label>
-                            <input type="number" id="valor" placeholder="0,00" min="0.01"
-                                max="9999999999.99" step="0.01" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="data">Data</label>
-                            <input type="date" id="data" required>
-                        </div>
-
-                        <div class="form-group" id="grupoFormaPagamento" hidden>
-                            <label for="formaPagamento">Forma de pagamento</label>
-                            <select id="formaPagamento">
-                                <option value="pix">Pix</option>
-                                <option value="debito">Cartão de débito</option>
-                                <option value="credito">Cartão de crédito</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group" id="grupoCartao" hidden>
-                            <label for="cartaoSelecionado">Cartão de crédito</label>
-                            <select id="cartaoSelecionado">
-                                <option value="">Selecione um cartão</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group" id="grupoParcelas" hidden>
-                            <label for="quantidadeParcelas">Quantidade de parcelas</label>
-                            <input type="number" id="quantidadeParcelas" min="1" max="60" step="1" value="1">
-                        </div>
-
                     </div>
-
                     <div class="form-actions">
                         <button type="reset" class="btn-secondary">Limpar</button>
-                        <button type="submit" class="btn-primary" id="btnSalvar">Salvar movimentação</button>
+                        <button type="submit" class="btn-primary" id="btnSalvarOrcamento">Salvar orçamento</button>
                     </div>
-
-                    <p id="mensagemFormulario" class="form-message"></p>
+                    <p id="mensagemOrcamento" class="form-message"></p>
                 </form>
-            </section>
 
-            <!-- TRANSAÇÕES -->
-            <section id="transacoes" class="panel transactions-panel">
-                <div class="panel-header transactions-header">
-                    <div>
-                        <h3>Movimentações recentes</h3>
-                        <p>Histórico financeiro</p>
+                <div class="orcamentos-lista-header">
+                    <h3>Orçamentos do mês</h3>
+                    <span id="totalOrcamentos">0 categorias</span>
+                </div>
+                <div id="listaOrcamentos" class="orcamentos-lista">
+                    <p class="empty">Carregando orçamentos...</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="nova-transacao" class="panel form-panel">
+            <div class="panel-header">
+                <div><h3>Nova movimentação</h3><p>Cadastre uma receita ou despesa.</p></div>
+            </div>
+
+            <form id="formTransacao">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="descricao">Descrição</label>
+                        <input type="text" id="descricao" placeholder="Ex: Salário, mercado..."
+                            maxlength="200" required>
                     </div>
-
-                    <div class="transaction-actions">
-
-                        <select id="filtroTipo" class="filter-select">
-                            <option value="">Todos os tipos</option>
-                            <option value="receita">Receitas</option>
-                            <option value="despesa">Despesas</option>
+                    <div class="form-group">
+                        <label for="tipo">Tipo</label>
+                        <select id="tipo" required>
+                            <option value="receita">Receita</option>
+                            <option value="despesa">Despesa</option>
                         </select>
-
-                        <select id="filtroCategoria" class="filter-select">
-                            <option value="">Todas as categorias</option>
+                    </div>
+                    <div class="form-group">
+                        <label for="categoria">Categoria</label>
+                        <select id="categoria" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="valor">Valor (R$)</label>
+                        <input type="number" id="valor" placeholder="0,00" min="0.01"
+                            max="9999999999.99" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="data">Data</label>
+                        <input type="date" id="data" required>
+                    </div>
+                    <div class="form-group" id="grupoFormaPagamento" hidden>
+                        <label for="formaPagamento">Forma de pagamento</label>
+                        <select id="formaPagamento">
+                            <option value="pix">Pix</option>
+                            <option value="debito">Cartão de débito</option>
+                            <option value="credito">Cartão de crédito</option>
                         </select>
-
-                        <select id="filtroOrigem" class="filter-select">
-                            <option value="">Todas as origens</option>
-                            <option value="transacao">Movimentações normais</option>
-                            <option value="conta-fixa">Contas fixas</option>
-                            <option value="cartao">Cartão de crédito</option>
+                    </div>
+                    <div class="form-group" id="grupoCartao" hidden>
+                        <label for="cartaoSelecionado">Cartão de crédito</label>
+                        <select id="cartaoSelecionado">
+                            <option value="">Selecione um cartão</option>
                         </select>
-
-                        <!-- BOTÕES EXCEL NA MESMA LINHA -->
-                        <div class="botoes-excel">
-                            <button type="button" class="btn-excel" onclick="exportarExcel()">
-                                ↓ Exportar Excel
-                            </button>
-
-                            <button
-                                type="button"
-                                class="btn-import"
-                                onclick="document.getElementById('arquivoExcel').click()"
-                            >
-                                ↑ Importar Excel
-                            </button>
-                        </div>
-
-                        <input type="file" id="arquivoExcel" accept=".xlsx" hidden>
-
+                    </div>
+                    <div class="form-group" id="grupoParcelas" hidden>
+                        <label for="quantidadeParcelas">Quantidade de parcelas</label>
+                        <input type="number" id="quantidadeParcelas" min="1" max="60" step="1" value="1">
                     </div>
                 </div>
 
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Descrição</th>
-                                <th>Categoria</th>
-                                <th>Data</th>
-                                <th>Tipo</th>
-                                <th>Valor</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabelaTransacoes">
-                            <tr>
-                                <td colspan="6" class="empty">Carregando movimentações...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="form-actions">
+                    <button type="reset" class="btn-secondary">Limpar</button>
+                    <button type="submit" class="btn-primary" id="btnSalvar">Salvar movimentação</button>
                 </div>
-            </section>
+                <p id="mensagemFormulario" class="form-message"></p>
+            </form>
+        </section>
 
-            <footer>
-                Meu Financeiro © 2026 — Controle financeiro pessoal
-            </footer>
+        <section id="transacoes" class="panel transactions-panel">
+            <div class="panel-header transactions-header">
+                <div><h3>Movimentações recentes</h3><p>Histórico financeiro</p></div>
+                <div class="transaction-actions">
+                    <select id="filtroTipo" class="filter-select">
+                        <option value="">Todos os tipos</option>
+                        <option value="receita">Receitas</option>
+                        <option value="despesa">Despesas</option>
+                    </select>
+                    <select id="filtroCategoria" class="filter-select">
+                        <option value="">Todas as categorias</option>
+                    </select>
+                    <select id="filtroOrigem" class="filter-select">
+                        <option value="">Todas as origens</option>
+                        <option value="transacao">Movimentações normais</option>
+                        <option value="conta-fixa">Contas fixas</option>
+                        <option value="cartao">Cartão de crédito</option>
+                    </select>
+                    <button type="button" class="btn-excel" onclick="exportarExcel()">↓ Exportar Excel</button>
+                    <button type="button" class="btn-import"
+                        onclick="document.getElementById('arquivoExcel').click()">↑ Importar Excel</button>
+                    <input type="file" id="arquivoExcel" accept=".xlsx" hidden>
+                </div>
+            </div>
 
-        </main>
-    </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Descrição</th><th>Categoria</th><th>Data</th>
+                            <th>Tipo</th><th>Valor</th><th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaTransacoes">
+                        <tr><td colspan="6" class="empty">Carregando movimentações...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-    <script src="/sidebar.js"></script>
-    <script src="/js/app.js"></script>
+        <footer>Meu Financeiro © 2026 — Controle financeiro pessoal</footer>
+    </main>
+</div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const botao = document.getElementById("mobileMenuButton");
-            const sidebar = document.getElementById("sidebar");
-            const overlay = document.getElementById("sidebarOverlay");
+<script src="/js/sidebar.js"></script>
+<script src="/js/app.js"></script>
 
-            if (!botao || !sidebar || !overlay) return;
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const botao = document.getElementById("mobileMenuButton");
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebarOverlay");
 
-            const abrirMenu = () => {
-                sidebar.classList.add("sidebar-open");
-                overlay.classList.add("overlay-visible");
-                document.body.classList.add("menu-open");
-                botao.setAttribute("aria-expanded", "true");
-                botao.setAttribute("aria-label", "Fechar menu");
-            };
+    if (!botao || !sidebar || !overlay) return;
 
-            const fecharMenu = () => {
-                sidebar.classList.remove("sidebar-open");
-                overlay.classList.remove("overlay-visible");
-                document.body.classList.remove("menu-open");
-                botao.setAttribute("aria-expanded", "false");
-                botao.setAttribute("aria-label", "Abrir menu");
-            };
+    const fecharMenu = () => {
+        sidebar.classList.remove("sidebar-open");
+        overlay.classList.remove("overlay-visible");
+        document.body.classList.remove("menu-open");
+        botao.setAttribute("aria-expanded", "false");
+        botao.setAttribute("aria-label", "Abrir menu");
+    };
 
-            botao.addEventListener("click", () => {
-                sidebar.classList.contains("sidebar-open") ? fecharMenu() : abrirMenu();
-            });
+    const abrirMenu = () => {
+        sidebar.classList.add("sidebar-open");
+        overlay.classList.add("overlay-visible");
+        document.body.classList.add("menu-open");
+        botao.setAttribute("aria-expanded", "true");
+        botao.setAttribute("aria-label", "Fechar menu");
+    };
 
-            overlay.addEventListener("click", fecharMenu);
+    botao.addEventListener("click", () => {
+        sidebar.classList.contains("sidebar-open") ? fecharMenu() : abrirMenu();
+    });
 
-            sidebar.querySelectorAll(".menu-item").forEach(link => {
-                link.addEventListener("click", fecharMenu);
-            });
+    overlay.addEventListener("click", fecharMenu);
+    sidebar.querySelectorAll(".menu-item").forEach(link => {
+        link.addEventListener("click", fecharMenu);
+    });
 
-            document.addEventListener("keydown", evento => {
-                if (evento.key === "Escape") fecharMenu();
-            });
+    document.addEventListener("keydown", evento => {
+        if (evento.key === "Escape") fecharMenu();
+    });
 
-            window.addEventListener("resize", () => {
-                if (window.innerWidth > 800) fecharMenu();
-            });
-        });
-    </script>
+    window.addEventListener("resize", () => {
+        if (window.innerWidth > 800) fecharMenu();
+    });
+});
+</script>
 </body>
 </html>

@@ -1,4 +1,3 @@
-
 import calendar
 import re
 
@@ -20,6 +19,8 @@ from sqlalchemy import func
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 
+from pydantic import BaseModel, Field
+
 from database import get_db
 from models import (
     Usuario,
@@ -28,11 +29,11 @@ from models import (
     CompraCartao,
     FaturaCartao,
     Orcamento,
-    ContaMensal
+    ContaMensal,
 )
 from schemas import TransacaoCreate, TransacaoResponse
 from auth import get_usuario_atual
-from pydantic import BaseModel, Field
+
 
 router = APIRouter(
     prefix="/api",
@@ -505,6 +506,7 @@ def listar_movimentos(
 
     return movimentos
 
+
 # =====================================
 # EDITAR TRANSAÇÃO
 # =====================================
@@ -570,16 +572,13 @@ def excluir_transacao(
         )
 
     try:
-        # Localiza a conta mensal vinculada à movimentação.
         conta_mensal = db.query(ContaMensal).filter(
             ContaMensal.transacao_id == transacao_id
         ).first()
 
-        # Desvincula a movimentação, mas preserva a conta mensal.
         if conta_mensal:
             conta_mensal.transacao_id = None
 
-        # Exclui somente a movimentação.
         db.delete(transacao)
         db.commit()
 
@@ -598,7 +597,8 @@ def excluir_transacao(
             status_code=500,
             detail=str(erro)
         )
-    
+
+
 # =====================================
 # DASHBOARD
 # =====================================
@@ -818,18 +818,14 @@ def exportar_excel(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_usuario_atual)
 ):
-    # Validar mês selecionado
     ano, numero_mes = validar_mes(mes)
     inicio, fim = periodo_mes(ano, numero_mes)
 
-    # Evitar contabilizar o pagamento da fatura
-    # novamente como uma despesa.
     pagamentos_faturas = subquery_pagamentos_usuario(
         usuario.id,
         db
     )
 
-    # Buscar transações normais do usuário no mês.
     transacoes = db.query(Transacao).filter(
         Transacao.usuario_id == usuario.id,
         Transacao.data >= inicio,
@@ -837,7 +833,6 @@ def exportar_excel(
         ~Transacao.id.in_(pagamentos_faturas)
     ).all()
 
-    # Buscar parcelas das faturas do mês selecionado.
     parcelas = db.query(
         CompraCartao,
         FaturaCartao,
@@ -854,7 +849,6 @@ def exportar_excel(
         FaturaCartao.mes == numero_mes
     ).all()
 
-    # Criar lista única de movimentações.
     movimentacoes = []
 
     for t in transacoes:
@@ -867,22 +861,20 @@ def exportar_excel(
             "origem": "Transação"
         })
 
-    for compra, fatura in parcelas:
+    for compra, fatura, cartao in parcelas:
         movimentacoes.append({
             "descricao": compra.descricao,
             "tipo": "despesa",
             "categoria": compra.categoria or "Outros",
             "valor": compra.valor_centavos / 100,
             "data": compra.data,
-            "origem": "Cartão de crédito"
+            "origem": f"Cartão de crédito - {cartao.nome}"
         })
 
-    # Ordenar por data.
     movimentacoes.sort(
         key=lambda item: item["data"]
     )
 
-    # Criar arquivo Excel.
     arquivo = Workbook()
     planilha = arquivo.active
     planilha.title = "Movimentações"
@@ -898,7 +890,6 @@ def exportar_excel(
 
     planilha.append(cabecalho)
 
-    # Estilizar cabeçalho.
     for celula in planilha[1]:
         celula.font = Font(
             bold=True,
@@ -914,7 +905,6 @@ def exportar_excel(
             horizontal="center"
         )
 
-    # Inserir movimentações.
     for movimento in movimentacoes:
         planilha.append([
             movimento["descricao"],
@@ -925,7 +915,6 @@ def exportar_excel(
             movimento["origem"]
         ])
 
-    # Formatação.
     planilha.freeze_panes = "A2"
     planilha.auto_filter.ref = planilha.dimensions
 
@@ -935,7 +924,7 @@ def exportar_excel(
         "C": 22,
         "D": 18,
         "E": 18,
-        "F": 22
+        "F": 30
     }
 
     for coluna, largura in larguras.items():
@@ -952,7 +941,6 @@ def exportar_excel(
             5
         ).number_format = "DD/MM/YYYY"
 
-    # Preparar download.
     buffer = BytesIO()
     arquivo.save(buffer)
     buffer.seek(0)
@@ -968,6 +956,7 @@ def exportar_excel(
             f'attachment; filename="movimentacoes_{mes}.xlsx"'
         }
     )
+
 
 # =====================================
 # IMPORTAR EXCEL
@@ -1168,6 +1157,10 @@ async def importar_excel(
             planilha_excel.close()
 
 
+# =====================================
+# ORÇAMENTOS MENSAIS POR CATEGORIA
+# =====================================
+
 class OrcamentoCreate(BaseModel):
     categoria: str = Field(min_length=1, max_length=100)
     ano: int = Field(ge=2000, le=2100)
@@ -1188,7 +1181,10 @@ def salvar_orcamento(
     categoria = dados.categoria.strip()
 
     if not categoria:
-        raise HTTPException(400, "Informe uma categoria.")
+        raise HTTPException(
+            400,
+            "Informe uma categoria."
+        )
 
     cartoes_ids = dados.cartoes_ids
 
@@ -1219,7 +1215,10 @@ def salvar_orcamento(
     valor_centavos = para_centavos(dados.valor_limite)
 
     if valor_centavos <= 0:
-        raise HTTPException(400, "O limite deve ser maior que zero.")
+        raise HTTPException(
+            400,
+            "O limite deve ser maior que zero."
+        )
 
     orcamento = db.query(Orcamento).filter(
         Orcamento.usuario_id == usuario.id,
@@ -1241,15 +1240,21 @@ def salvar_orcamento(
             valor_limite_centavos=valor_centavos,
             cartoes_ids=cartoes_texto
         )
+
         db.add(orcamento)
         mensagem = "Orçamento cadastrado com sucesso!"
 
     try:
         db.commit()
         db.refresh(orcamento)
+
     except Exception:
         db.rollback()
-        raise HTTPException(500, "Não foi possível salvar o orçamento.")
+
+        raise HTTPException(
+            500,
+            "Não foi possível salvar o orçamento."
+        )
 
     return {
         "mensagem": mensagem,
@@ -1278,20 +1283,29 @@ def listar_orcamentos(
         Orcamento.usuario_id == usuario.id,
         Orcamento.ano == ano,
         Orcamento.mes == numero_mes
-    ).order_by(Orcamento.categoria.asc()).all()
+    ).order_by(
+        Orcamento.categoria.asc()
+    ).all()
 
-    pagamentos_faturas = subquery_pagamentos_usuario(usuario.id, db)
+    pagamentos_faturas = subquery_pagamentos_usuario(
+        usuario.id,
+        db
+    )
 
     despesas_normais = db.query(
         Transacao.categoria,
-        func.coalesce(func.sum(Transacao.valor_centavos), 0)
+        func.coalesce(
+            func.sum(Transacao.valor_centavos), 0
+        )
     ).filter(
         Transacao.usuario_id == usuario.id,
         Transacao.tipo == "despesa",
         Transacao.data >= inicio,
         Transacao.data < fim,
         ~Transacao.id.in_(pagamentos_faturas)
-    ).group_by(Transacao.categoria).all()
+    ).group_by(
+        Transacao.categoria
+    ).all()
 
     gastos = {}
 
@@ -1328,8 +1342,10 @@ def listar_orcamentos(
             )
         else:
             categoria = compra.categoria or "Outros"
+
             gastos[categoria] = (
-                gastos.get(categoria, 0) + compra.valor_centavos
+                gastos.get(categoria, 0)
+                + compra.valor_centavos
             )
 
     gastos["Parcelados"] = sum(
@@ -1371,7 +1387,10 @@ def listar_orcamentos(
             "limite": limite / 100,
             "gasto": gasto / 100,
             "restante": restante / 100,
-            "percentual": round((gasto / limite) * 100, 2),
+            "percentual": round(
+                (gasto / limite) * 100,
+                2
+            ),
             "ultrapassou": gasto > limite,
             "cartoes_ids": cartoes_selecionados
         })
@@ -1394,9 +1413,14 @@ def excluir_orcamento(
     ).first()
 
     if not orcamento:
-        raise HTTPException(404, "Orçamento não encontrado.")
+        raise HTTPException(
+            404,
+            "Orçamento não encontrado."
+        )
 
     db.delete(orcamento)
     db.commit()
 
-    return {"mensagem": "Orçamento excluído com sucesso!"}
+    return {
+        "mensagem": "Orçamento excluído com sucesso!"
+    }

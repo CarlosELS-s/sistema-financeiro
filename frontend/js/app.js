@@ -1,7 +1,5 @@
-
 const API_URL = "/api";
 
-// Cartões disponíveis para configurar o orçamento de Parcelados.
 let cartoesDisponiveisOrcamento = [];
 
 // ======================================
@@ -10,67 +8,45 @@ let cartoesDisponiveisOrcamento = [];
 
 const categorias = {
     receita: [
-        "Salário",
-        "Freelance",
-        "Investimentos",
-        "Vendas",
-        "Presente",
-        "Outros"
+        "Salário", "Freelance", "Investimentos",
+        "Vendas", "Presente", "Outros"
     ],
-
     despesa: [
-        "Alimentação",
-        "Moradia",
-        "Transporte",
-        "Saúde",
-        "Educação",
-        "Lazer",
-        "Compras",
-        "Contas",
-        "Assinaturas",
-        "Parcelados",
-        "Outros"
+        "Alimentação", "Moradia", "Transporte", "Saúde",
+        "Educação", "Lazer", "Compras", "Contas",
+        "Assinaturas", "Parcelados", "Outros"
     ]
 };
 
 const coresGrafico = [
-    "#22c55e",
-    "#3b82f6",
-    "#f59e0b",
-    "#a855f7",
-    "#ef4444",
-    "#06b6d4",
-    "#ec4899",
-    "#84cc16",
-    "#f97316",
-    "#64748b"
+    "#22c55e", "#3b82f6", "#f59e0b", "#a855f7",
+    "#ef4444", "#06b6d4", "#ec4899", "#84cc16",
+    "#f97316", "#64748b"
 ];
 
 // ======================================
 // FORMATAÇÃO
 // ======================================
 
-const formatarMoeda = (valor) => {
+const formatarMoeda = valor => {
     const numero = Number(valor || 0);
     const negativo = numero < 0;
 
-    const valorFormatado = Math.abs(numero).toLocaleString("pt-BR", {
+    const formatado = Math.abs(numero).toLocaleString("pt-BR", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
 
-    return `${negativo ? "-" : ""}R$ ${valorFormatado}`;
+    return `${negativo ? "-" : ""}R$ ${formatado}`;
 };
 
-const formatarData = (data) => {
+const formatarData = data => {
     if (!data) return "-";
-
     const [ano, mes, dia] = data.split("-");
-
     return `${dia}/${mes}/${ano}`;
 };
 
-const escaparHTML = (valor) => {
+const escaparHTML = valor => {
     return String(valor ?? "").replace(/[&<>"']/g, caractere => {
         const mapa = {
             "&": "&amp;",
@@ -79,7 +55,6 @@ const escaparHTML = (valor) => {
             '"': "&quot;",
             "'": "&#039;"
         };
-
         return mapa[caractere];
     });
 };
@@ -99,7 +74,6 @@ function limparSessao() {
 
 function redirecionarLogin() {
     limparSessao();
-
     if (window.location.pathname !== "/login") {
         window.location.href = "/login";
     }
@@ -113,9 +87,7 @@ async function requisicao(url, opcoes = {}) {
         throw new Error("Faça login para continuar.");
     }
 
-    const headers = {
-        ...opcoes.headers
-    };
+    const headers = { ...opcoes.headers };
 
     if (
         opcoes.body &&
@@ -138,7 +110,6 @@ async function requisicao(url, opcoes = {}) {
     }
 
     const texto = await resposta.text();
-
     let dados = {};
 
     try {
@@ -170,10 +141,7 @@ async function requisicao(url, opcoes = {}) {
 // ======================================
 
 document.addEventListener("DOMContentLoaded", () => {
-
-    const token = obterToken();
-
-    if (!token) {
+    if (!obterToken()) {
         redirecionarLogin();
         return;
     }
@@ -183,14 +151,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (usuarioSalvo) {
         try {
             const usuario = JSON.parse(usuarioSalvo);
-
-            const nomeElemento = document.querySelector(
-                ".user-card strong"
-            );
-
-            const avatarElemento = document.querySelector(
-                ".user-avatar"
-            );
+            const nomeElemento = document.querySelector(".user-card strong");
+            const avatarElemento = document.querySelector(".user-avatar");
 
             if (nomeElemento && usuario.nome) {
                 nomeElemento.textContent = usuario.nome;
@@ -200,7 +162,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 avatarElemento.textContent =
                     usuario.nome.charAt(0).toUpperCase();
             }
-
         } catch (erro) {
             console.error("Erro ao carregar usuário:", erro);
         }
@@ -214,9 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const mesFiltro = document.getElementById("mesFiltro");
     const campoData = document.getElementById("data");
 
-    if (mesFiltro) {
-        mesFiltro.value = mesAtual;
-    }
+    if (mesFiltro) mesFiltro.value = mesAtual;
 
     if (campoData) {
         campoData.value =
@@ -246,13 +205,10 @@ document.addEventListener("DOMContentLoaded", () => {
         );
     });
 
-    document.getElementById("tipo")?.addEventListener(
-        "change",
-        () => {
-            atualizarCategorias();
-            atualizarCamposPagamento();
-        }
-    );
+    document.getElementById("tipo")?.addEventListener("change", () => {
+        atualizarCategorias();
+        atualizarCamposPagamento();
+    });
 
     document.getElementById("formTransacao")?.addEventListener(
         "submit",
@@ -274,29 +230,25 @@ document.addEventListener("DOMContentLoaded", () => {
         atualizarCamposPagamento
     );
 
-    document.getElementById("formTransacao")?.addEventListener(
-        "reset",
-        () => {
-            setTimeout(() => {
-                atualizarCategorias();
-                configurarPagamento();
-            }, 0);
-        }
-    );
+    document.getElementById("formTransacao")?.addEventListener("reset", () => {
+        setTimeout(() => {
+            atualizarCategorias();
+            configurarPagamento();
+        }, 0);
+    });
 
-    document.getElementById("formOrcamento")?.addEventListener(
-        "reset",
-        () => {
-            setTimeout(() => {
-                carregarCategoriasOrcamento();
+    document.getElementById("formOrcamento")?.addEventListener("reset", () => {
+        setTimeout(() => {
+            carregarCategoriasOrcamento();
 
-                const mensagem = document.getElementById("mensagemOrcamento");
+            const mensagem = document.getElementById("mensagemOrcamento");
+            if (mensagem) mensagem.textContent = "";
+        }, 0);
+    });
 
-                if (mensagem) {
-                    mensagem.textContent = "";
-                }
-            }, 0);
-        }
+    document.getElementById("orcamentoCategoria")?.addEventListener(
+        "change",
+        atualizarVisibilidadeCartoesOrcamento
     );
 });
 
@@ -313,37 +265,20 @@ function configurarOrcamentosRecolhiveis() {
     if (!botao || !conteudo) return;
 
     conteudo.hidden = true;
-
     botao.setAttribute("aria-expanded", "false");
 
-    if (texto) {
-        texto.textContent = "Expandir";
-    }
-
-    if (icone) {
-        icone.textContent = "⌄";
-    }
+    if (texto) texto.textContent = "Expandir";
+    if (icone) icone.textContent = "⌄";
 
     botao.addEventListener("click", () => {
-        const expandido =
-            botao.getAttribute("aria-expanded") === "true";
-
+        const expandido = botao.getAttribute("aria-expanded") === "true";
         const novoEstado = !expandido;
 
         conteudo.hidden = !novoEstado;
+        botao.setAttribute("aria-expanded", String(novoEstado));
 
-        botao.setAttribute(
-            "aria-expanded",
-            String(novoEstado)
-        );
-
-        if (texto) {
-            texto.textContent = novoEstado ? "Recolher" : "Expandir";
-        }
-
-        if (icone) {
-            icone.textContent = novoEstado ? "⌃" : "⌄";
-        }
+        if (texto) texto.textContent = novoEstado ? "Recolher" : "Expandir";
+        if (icone) icone.textContent = novoEstado ? "⌃" : "⌄";
     });
 }
 
@@ -353,11 +288,7 @@ function configurarOrcamentosRecolhiveis() {
 
 function configurarPagamento() {
     const forma = document.getElementById("formaPagamento");
-
-    if (forma) {
-        forma.value = "pix";
-    }
-
+    if (forma) forma.value = "pix";
     atualizarCamposPagamento();
 }
 
@@ -374,70 +305,42 @@ function atualizarCamposPagamento() {
 
     if (!tipoElemento) return;
 
-    const tipo = tipoElemento.value;
-    const forma = formaElemento?.value || "pix";
+    const ehDespesa = tipoElemento.value === "despesa";
+    const ehCredito = ehDespesa && formaElemento?.value === "credito";
 
-    const ehDespesa = tipo === "despesa";
-    const ehCredito = ehDespesa && forma === "credito";
-
-    if (grupoForma) {
-        grupoForma.hidden = !ehDespesa;
-    }
-
-    if (grupoCartao) {
-        grupoCartao.hidden = !ehCredito;
-    }
-
-    if (grupoParcelas) {
-        grupoParcelas.hidden = !ehCredito;
-    }
+    if (grupoForma) grupoForma.hidden = !ehDespesa;
+    if (grupoCartao) grupoCartao.hidden = !ehCredito;
+    if (grupoParcelas) grupoParcelas.hidden = !ehCredito;
 
     if (!ehCredito) {
-        if (cartaoElemento) {
-            cartaoElemento.value = "";
-        }
-
-        if (parcelasElemento) {
-            parcelasElemento.value = "1";
-        }
+        if (cartaoElemento) cartaoElemento.value = "";
+        if (parcelasElemento) parcelasElemento.value = "1";
     }
 }
 
 async function carregarCartoes() {
     const select = document.getElementById("cartaoSelecionado");
-
     if (!select) return;
 
     try {
         const cartoes = await requisicao(`${API_URL}/cartoes`);
 
-        select.innerHTML = `
-            <option value="">Selecione um cartão</option>
-        `;
+        select.innerHTML = `<option value="">Selecione um cartão</option>`;
 
         cartoes.forEach(cartao => {
             const option = document.createElement("option");
-
             option.value = cartao.id;
-
             option.textContent =
                 `${cartao.nome} - Disponível: ${formatarMoeda(cartao.disponivel_centavos / 100)}`;
-
             select.appendChild(option);
         });
 
-        if (cartoes.length === 0) {
-            select.innerHTML = `
-                <option value="">Nenhum cartão cadastrado</option>
-            `;
+        if (!cartoes.length) {
+            select.innerHTML = `<option value="">Nenhum cartão cadastrado</option>`;
         }
-
     } catch (erro) {
         console.error("Erro ao carregar cartões:", erro);
-
-        select.innerHTML = `
-            <option value="">Erro ao carregar cartões</option>
-        `;
+        select.innerHTML = `<option value="">Erro ao carregar cartões</option>`;
     }
 }
 
@@ -461,22 +364,18 @@ function atualizarCategorias() {
 
     if (!tipoElemento || !select) return;
 
-    const tipo = tipoElemento.value;
-
     select.innerHTML = "";
 
-    (categorias[tipo] || categorias.despesa).forEach(categoria => {
+    (categorias[tipoElemento.value] || categorias.despesa).forEach(categoria => {
         const option = document.createElement("option");
-
         option.value = categoria;
         option.textContent = categoria;
-
         select.appendChild(option);
     });
 }
 
 // ======================================
-// BUSCAR CONTAS FIXAS DO MÊS
+// CONTAS FIXAS
 // ======================================
 
 async function carregarContasFixasDoMes(mes) {
@@ -490,13 +389,11 @@ async function carregarContasFixasDoMes(mes) {
         const [anoSelecionado, mesSelecionado] = mes.split("-").map(Number);
 
         return contas
-            .filter(conta => {
-                const pertenceAoMes =
-                    Number(conta.ano) === anoSelecionado &&
-                    Number(conta.mes) === mesSelecionado;
-
-                return pertenceAoMes && conta.status === "pendente";
-            })
+            .filter(conta =>
+                Number(conta.ano) === anoSelecionado &&
+                Number(conta.mes) === mesSelecionado &&
+                conta.status === "pendente"
+            )
             .map(conta => ({
                 id: `conta-fixa-${conta.id}`,
                 descricao: conta.nome,
@@ -507,7 +404,6 @@ async function carregarContasFixasDoMes(mes) {
                 prevista: true,
                 contaMensalId: conta.id
             }));
-
     } catch (erro) {
         console.error("Erro ao carregar contas fixas:", erro);
         return [];
@@ -520,16 +416,13 @@ async function carregarContasFixasDoMes(mes) {
 
 async function carregarDashboard() {
     const campoMes = document.getElementById("mesFiltro");
-
     if (!campoMes) return;
 
     const mes = campoMes.value;
 
     try {
         const [dados, contasPendentes] = await Promise.all([
-            requisicao(
-                `${API_URL}/dashboard?mes=${encodeURIComponent(mes)}`
-            ),
+            requisicao(`${API_URL}/dashboard?mes=${encodeURIComponent(mes)}`),
             carregarContasFixasDoMes(mes)
         ]);
 
@@ -544,9 +437,7 @@ async function carregarDashboard() {
         const saldoComPrevisao =
             Number(dados.saldo_mes || 0) - totalContasPendentes;
 
-        const saldoTotalElemento =
-            document.getElementById("saldoTotal");
-
+        const saldoTotalElemento = document.getElementById("saldoTotal");
         const saldoTotal = Number(dados.saldo_total || 0);
 
         if (saldoTotalElemento) {
@@ -580,42 +471,34 @@ async function carregarDashboard() {
 
         (dados.despesas_categoria || []).forEach(item => {
             const categoria = item.categoria || "Outros";
-
             categoriasAgrupadas.set(
                 categoria,
-                (categoriasAgrupadas.get(categoria) || 0) +
-                Number(item.valor || 0)
+                (categoriasAgrupadas.get(categoria) || 0) + Number(item.valor || 0)
             );
         });
 
         contasPendentes.forEach(conta => {
             const categoria = conta.categoria || "Contas";
-
             categoriasAgrupadas.set(
                 categoria,
                 (categoriasAgrupadas.get(categoria) || 0) + conta.valor
             );
         });
 
-        const despesasPorCategoria = Array.from(
-            categoriasAgrupadas,
-            ([categoria, valor]) => ({ categoria, valor })
+        atualizarGraficoCategorias(
+            Array.from(categoriasAgrupadas, ([categoria, valor]) => ({
+                categoria,
+                valor
+            }))
         );
-
-        atualizarGraficoCategorias(despesasPorCategoria);
-
     } catch (erro) {
         console.error("Erro ao carregar dashboard:", erro);
-
-        mostrarMensagem(
-            "Não foi possível carregar o dashboard.",
-            "error"
-        );
+        mostrarMensagem("Não foi possível carregar o dashboard.", "error");
     }
 }
 
 // ======================================
-// GRÁFICO RECEITAS X DESPESAS
+// GRÁFICOS
 // ======================================
 
 function atualizarGraficoComparacao(receitas, despesas) {
@@ -636,20 +519,13 @@ function atualizarGraficoComparacao(receitas, despesas) {
         formatarMoeda(despesas);
 }
 
-// ======================================
-// GRÁFICO DE CATEGORIAS
-// ======================================
-
 function atualizarGraficoCategorias(dados) {
     const grafico = document.getElementById("graficoCategorias");
     const legenda = document.getElementById("legendaCategorias");
 
     if (!grafico || !legenda) return;
 
-    const total = dados.reduce(
-        (soma, item) => soma + Number(item.valor),
-        0
-    );
+    const total = dados.reduce((soma, item) => soma + Number(item.valor), 0);
 
     document.getElementById("totalCategorias").textContent =
         formatarMoeda(total);
@@ -657,12 +533,8 @@ function atualizarGraficoCategorias(dados) {
     legenda.innerHTML = "";
 
     if (total <= 0) {
-        grafico.style.background =
-            "conic-gradient(#263247 0deg 360deg)";
-
-        legenda.innerHTML =
-            '<span class="legend-item">Nenhuma despesa registrada</span>';
-
+        grafico.style.background = "conic-gradient(#263247 0deg 360deg)";
+        legenda.innerHTML = '<span class="legend-item">Nenhuma despesa registrada</span>';
         return;
     }
 
@@ -679,22 +551,19 @@ function atualizarGraficoCategorias(dados) {
 
         const elemento = document.createElement("div");
         elemento.className = "legend-item";
-
         elemento.innerHTML = `
             <span class="legend-color" style="background:${cor}"></span>
             <span>${escaparHTML(item.categoria)}</span>
             <strong>${porcentagem.toFixed(1)}%</strong>
         `;
-
         legenda.appendChild(elemento);
     });
 
-    grafico.style.background =
-        `conic-gradient(${partes.join(", ")})`;
+    grafico.style.background = `conic-gradient(${partes.join(", ")})`;
 }
 
 // ======================================
-// LISTAR E FILTRAR MOVIMENTAÇÕES
+// MOVIMENTAÇÕES
 // ======================================
 
 async function carregarTransacoes() {
@@ -702,20 +571,14 @@ async function carregarTransacoes() {
     const tipo = document.getElementById("filtroTipo")?.value || "";
     const categoria = document.getElementById("filtroCategoria")?.value || "";
     const origem = document.getElementById("filtroOrigem")?.value || "";
-
     const tabela = document.getElementById("tabelaTransacoes");
 
     if (!tabela) return;
 
-    tabela.innerHTML = `
-        <tr>
-            <td colspan="6" class="empty">Carregando...</td>
-        </tr>
-    `;
+    tabela.innerHTML = `<tr><td colspan="6" class="empty">Carregando...</td></tr>`;
 
     try {
         const parametros = new URLSearchParams();
-
         if (mes) parametros.append("mes", mes);
 
         const [transacoes, contasPendentes] = await Promise.all([
@@ -724,10 +587,7 @@ async function carregarTransacoes() {
         ]);
 
         let movimentacoes = [
-            ...transacoes.map(transacao => ({
-                ...transacao,
-                prevista: false
-            })),
+            ...transacoes.map(item => ({ ...item, prevista: false })),
             ...contasPendentes
         ];
 
@@ -744,17 +604,13 @@ async function carregarTransacoes() {
 
         if (selectCategoria) {
             const categoriasDisponiveis = [
-                ...new Set(
-                    movimentacoes.map(item => item.categoria || "Outros")
-                )
+                ...new Set(movimentacoes.map(item => item.categoria || "Outros"))
             ].sort((a, b) => a.localeCompare(b, "pt-BR"));
 
             selectCategoria.innerHTML = `
                 <option value="">Todas as categorias</option>
                 ${categoriasDisponiveis.map(nome => `
-                    <option value="${escaparHTML(nome)}">
-                        ${escaparHTML(nome)}
-                    </option>
+                    <option value="${escaparHTML(nome)}">${escaparHTML(nome)}</option>
                 `).join("")}
             `;
 
@@ -774,9 +630,7 @@ async function carregarTransacoes() {
         }
 
         if (origem) {
-            movimentacoes = movimentacoes.filter(
-                item => item.origem === origem
-            );
+            movimentacoes = movimentacoes.filter(item => item.origem === origem);
         }
 
         movimentacoes.sort((a, b) =>
@@ -785,28 +639,23 @@ async function carregarTransacoes() {
 
         tabela.innerHTML = "";
 
-        if (movimentacoes.length === 0) {
+        if (!movimentacoes.length) {
             tabela.innerHTML = `
-                <tr>
-                    <td colspan="6" class="empty">
-                        Nenhuma movimentação encontrada com esses filtros.
-                    </td>
-                </tr>
+                <tr><td colspan="6" class="empty">
+                    Nenhuma movimentação encontrada com esses filtros.
+                </td></tr>
             `;
             return;
         }
 
         movimentacoes.forEach(transacao => {
             const tr = document.createElement("tr");
-
             const receita = transacao.tipo === "receita";
             const tipoTexto = receita ? "Receita" : "Despesa";
             const sinal = receita ? "+" : "-";
-
             const ehPrevista = transacao.prevista === true;
             const ehParcelaCartao = transacao.origem === "cartao";
 
-            // Mostra o nome do cartão somente nas parcelas de crédito.
             const descricaoExibida =
                 ehParcelaCartao && transacao.cartao_nome
                     ? `${transacao.descricao} (${transacao.cartao_nome})`
@@ -815,13 +664,9 @@ async function carregarTransacoes() {
             let identificacao = "";
 
             if (ehPrevista) {
-                identificacao = `
-                    <span class="movement-tag tag-prevista">Prevista</span>
-                `;
+                identificacao = `<span class="movement-tag tag-prevista">Prevista</span>`;
             } else if (ehParcelaCartao) {
-                identificacao = `
-                    <span class="movement-tag tag-cartao">Parcela do cartão</span>
-                `;
+                identificacao = `<span class="movement-tag tag-cartao">Parcela do cartão</span>`;
             }
 
             let acao = "";
@@ -832,43 +677,26 @@ async function carregarTransacoes() {
                 acao = '<span style="color:#94a3b8;">Fatura do cartão</span>';
             } else {
                 acao = `
-                    <button
-                        class="delete-btn"
-                        title="Excluir movimentação"
-                        aria-label="Excluir movimentação"
-                        data-id="${transacao.id}"
-                    >✕</button>
+                    <button class="delete-btn" title="Excluir movimentação"
+                        aria-label="Excluir movimentação" data-id="${transacao.id}">✕</button>
                 `;
             }
 
             tr.innerHTML = `
                 <td class="transaction-name">
                     <div class="transaction-identificacao">
-                        <span class="transaction-description">
-                            ${escaparHTML(descricaoExibida)}
-                        </span>
+                        <span class="transaction-description">${escaparHTML(descricaoExibida)}</span>
                         ${identificacao}
                     </div>
                 </td>
-
-                <td class="transaction-category">
-                    ${escaparHTML(transacao.categoria || "Outros")}
-                </td>
-
-                <td class="transaction-date">
-                    ${formatarData(transacao.data)}
-                </td>
-
-                <td>
-                    <span class="type-badge type-${transacao.tipo}">
-                        ${ehPrevista ? "Despesa prevista" : tipoTexto}
-                    </span>
-                </td>
-
+                <td class="transaction-category">${escaparHTML(transacao.categoria || "Outros")}</td>
+                <td class="transaction-date">${formatarData(transacao.data)}</td>
+                <td><span class="type-badge type-${transacao.tipo}">
+                    ${ehPrevista ? "Despesa prevista" : tipoTexto}
+                </span></td>
                 <td class="value-${transacao.tipo} valor-movimento">
-                ${sinal}&nbsp;${formatarMoeda(transacao.valor)}
+                    ${sinal}&nbsp;${formatarMoeda(transacao.valor)}
                 </td>
-
                 <td>${acao}</td>
             `;
 
@@ -881,16 +709,10 @@ async function carregarTransacoes() {
 
             tabela.appendChild(tr);
         });
-
     } catch (erro) {
         console.error("Erro ao listar movimentações:", erro);
-
         tabela.innerHTML = `
-            <tr>
-                <td colspan="6" class="empty">
-                    Erro ao carregar movimentações.
-                </td>
-            </tr>
+            <tr><td colspan="6" class="empty">Erro ao carregar movimentações.</td></tr>
         `;
     }
 }
@@ -904,7 +726,6 @@ async function salvarTransacao(evento) {
 
     const botao = document.getElementById("btnSalvar");
     const mensagem = document.getElementById("mensagemFormulario");
-
     const tipo = document.getElementById("tipo").value;
 
     const formaPagamento =
@@ -936,9 +757,7 @@ async function salvarTransacao(evento) {
         dados.forma_pagamento = formaPagamento;
 
         if (formaPagamento === "credito") {
-            const cartaoId =
-                document.getElementById("cartaoSelecionado")?.value;
-
+            const cartaoId = document.getElementById("cartaoSelecionado")?.value;
             const parcelas = Number(
                 document.getElementById("quantidadeParcelas")?.value
             );
@@ -949,14 +768,9 @@ async function salvarTransacao(evento) {
                 return;
             }
 
-            if (
-                !Number.isInteger(parcelas) ||
-                parcelas < 1 ||
-                parcelas > 60
-            ) {
+            if (!Number.isInteger(parcelas) || parcelas < 1 || parcelas > 60) {
                 mensagem.textContent =
                     "Informe uma quantidade de parcelas entre 1 e 60.";
-
                 mensagem.className = "form-message error";
                 return;
             }
@@ -983,7 +797,6 @@ async function salvarTransacao(evento) {
         mensagem.className = "form-message success";
 
         document.getElementById("formTransacao").reset();
-
         atualizarCategorias();
         configurarPagamento();
 
@@ -994,11 +807,9 @@ async function salvarTransacao(evento) {
 
         await carregarCartoes();
         atualizarTela();
-
     } catch (erro) {
         mensagem.textContent = erro.message;
         mensagem.className = "form-message error";
-
     } finally {
         botao.disabled = false;
         botao.textContent = "Salvar movimentação";
@@ -1010,43 +821,31 @@ async function salvarTransacao(evento) {
 // ======================================
 
 async function excluirTransacao(id) {
-    const confirmar = confirm(
-        "Tem certeza que deseja excluir esta movimentação?"
-    );
-
-    if (!confirmar) return;
+    if (!confirm("Tem certeza que deseja excluir esta movimentação?")) return;
 
     try {
         await requisicao(`${API_URL}/transacoes/${id}`, {
             method: "DELETE"
         });
-
         atualizarTela();
-
     } catch (erro) {
         alert(erro.message);
     }
 }
 
 // ======================================
-// NAVEGAÇÃO
+// NAVEGAÇÃO E MENSAGENS
 // ======================================
 
 function irParaFormulario() {
     document.getElementById("nova-transacao").scrollIntoView({
         behavior: "smooth"
     });
-
     document.getElementById("descricao").focus();
 }
 
-// ======================================
-// MENSAGENS
-// ======================================
-
 function mostrarMensagem(texto, tipo) {
     const mensagem = document.getElementById("mensagemFormulario");
-
     if (!mensagem) return;
 
     mensagem.textContent = texto;
@@ -1054,20 +853,18 @@ function mostrarMensagem(texto, tipo) {
 }
 
 // ======================================
-// EXPORTAR PLANILHA EXCEL
+// EXPORTAR EXCEL
 // ======================================
 
 async function exportarExcel() {
     try {
         const token = obterToken();
-
         if (!token) {
             redirecionarLogin();
             return;
         }
 
-        const campoMes = document.getElementById("mesFiltro");
-        const mes = campoMes?.value;
+        const mes = document.getElementById("mesFiltro")?.value;
 
         if (!mes) {
             alert("Selecione um mês antes de exportar.");
@@ -1078,7 +875,7 @@ async function exportarExcel() {
             `${API_URL}/planilhas/exportar?mes=${encodeURIComponent(mes)}`,
             {
                 headers: {
-                    "Authorization": `Bearer ${token}`
+                    Authorization: `Bearer ${token}`
                 }
             }
         );
@@ -1090,15 +887,11 @@ async function exportarExcel() {
 
         if (!resposta.ok) {
             const dados = await resposta.json().catch(() => ({}));
-
-            throw new Error(
-                dados.detail || "Erro ao exportar planilha."
-            );
+            throw new Error(dados.detail || "Erro ao exportar planilha.");
         }
 
         const blob = await resposta.blob();
         const url = URL.createObjectURL(blob);
-
         const link = document.createElement("a");
 
         link.href = url;
@@ -1109,7 +902,6 @@ async function exportarExcel() {
         link.remove();
 
         URL.revokeObjectURL(url);
-
     } catch (erro) {
         alert(erro.message);
         console.error("Erro ao exportar Excel:", erro);
@@ -1117,12 +909,11 @@ async function exportarExcel() {
 }
 
 // ======================================
-// IMPORTAR PLANILHA EXCEL
+// IMPORTAR EXCEL
 // ======================================
 
 async function importarExcel(evento) {
     const arquivo = evento.target.files[0];
-
     if (!arquivo) return;
 
     if (!arquivo.name.toLowerCase().endsWith(".xlsx")) {
@@ -1131,12 +922,10 @@ async function importarExcel(evento) {
         return;
     }
 
-    const confirmar = confirm(
+    if (!confirm(
         "Deseja importar as movimentações desta planilha? " +
         "As novas movimentações serão adicionadas às existentes."
-    );
-
-    if (!confirmar) {
+    )) {
         evento.target.value = "";
         return;
     }
@@ -1153,16 +942,13 @@ async function importarExcel(evento) {
     formulario.append("arquivo", arquivo);
 
     try {
-        const resposta = await fetch(
-            `${API_URL}/planilhas/importar`,
-            {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                },
-                body: formulario
-            }
-        );
+        const resposta = await fetch(`${API_URL}/planilhas/importar`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: formulario
+        });
 
         if (resposta.status === 401) {
             redirecionarLogin();
@@ -1172,9 +958,7 @@ async function importarExcel(evento) {
         const dados = await resposta.json().catch(() => ({}));
 
         if (!resposta.ok) {
-            throw new Error(
-                dados.detail || "Erro ao importar planilha."
-            );
+            throw new Error(dados.detail || "Erro ao importar planilha.");
         }
 
         alert(
@@ -1182,10 +966,8 @@ async function importarExcel(evento) {
         );
 
         atualizarTela();
-
     } catch (erro) {
         alert(erro.message);
-
     } finally {
         evento.target.value = "";
     }
@@ -1196,23 +978,18 @@ async function importarExcel(evento) {
 // ======================================
 
 function sairDaConta() {
-    const confirmar = confirm(
-        "Deseja realmente sair da sua conta?"
-    );
-
-    if (!confirmar) return;
+    if (!confirm("Deseja realmente sair da sua conta?")) return;
 
     limparSessao();
     window.location.replace("/login");
 }
 
 // ======================================
-// ORÇAMENTOS MENSAIS POR CATEGORIA
+// ORÇAMENTOS
 // ======================================
 
 function carregarCategoriasOrcamento() {
     const select = document.getElementById("orcamentoCategoria");
-
     if (!select) return;
 
     const categoriaAtual = select.value;
@@ -1251,52 +1028,16 @@ function prepararSelecaoCartoesOrcamento() {
         <label style="display:block; margin-bottom:8px;">
             Cartões considerados
         </label>
-
         <div style="position:relative;">
-            <button
-                type="button"
-                id="btnCartoesOrcamento"
-                class="campo-cartoes"
-                aria-expanded="false"
-                style="
-                    width:100%;
-                    min-height:46px;
-                    padding:12px 14px;
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    background:#151f30;
-                    color:#fff;
-                    border:1px solid #334155;
-                    border-radius:8px;
-                    cursor:pointer;
-                    text-align:left;
-                "
-            >
-                <span id="textoCartoesOrcamento">
-                    Todos os cartões
-                </span>
+            <button type="button" id="btnCartoesOrcamento"
+                class="campo-cartoes" aria-expanded="false"
+                style="width:100%;min-height:46px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;background:#151f30;color:#fff;border:1px solid #334155;border-radius:8px;cursor:pointer;text-align:left;">
+                <span id="textoCartoesOrcamento">Todos os cartões</span>
                 <span id="iconeCartoesOrcamento">⌄</span>
             </button>
-
-            <div
-                id="listaCartoesOrcamento"
-                hidden
-                style="
-                    position:absolute;
-                    z-index:1000;
-                    top:calc(100% + 6px);
-                    left:0;
-                    width:100%;
-                    max-height:240px;
-                    overflow-y:auto;
-                    padding:5px;
-                    background:#151f30;
-                    border:1px solid #334155;
-                    border-radius:8px;
-                    box-shadow:0 12px 30px rgba(0,0,0,.35);
-                "
-            ></div>
+            <div id="listaCartoesOrcamento" hidden
+                style="position:absolute;z-index:1000;top:calc(100% + 6px);left:0;width:100%;max-height:240px;overflow-y:auto;padding:5px;background:#151f30;border:1px solid #334155;border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.35);">
+            </div>
         </div>
     `;
 
@@ -1307,12 +1048,7 @@ function prepararSelecaoCartoesOrcamento() {
 
     botao.addEventListener("click", () => {
         lista.hidden = !lista.hidden;
-
-        botao.setAttribute(
-            "aria-expanded",
-            String(!lista.hidden)
-        );
-
+        botao.setAttribute("aria-expanded", String(!lista.hidden));
         document.getElementById("iconeCartoesOrcamento").textContent =
             lista.hidden ? "⌄" : "⌃";
     });
@@ -1321,20 +1057,15 @@ function prepararSelecaoCartoesOrcamento() {
         if (!grupo.contains(evento.target)) {
             lista.hidden = true;
             botao.setAttribute("aria-expanded", "false");
-
             document.getElementById("iconeCartoesOrcamento").textContent = "⌄";
         }
     });
 
-    categoria.addEventListener(
-        "change",
-        atualizarVisibilidadeCartoesOrcamento
-    );
+    categoria.addEventListener("change", atualizarVisibilidadeCartoesOrcamento);
 }
 
 async function carregarCartoesOrcamento() {
     const lista = document.getElementById("listaCartoesOrcamento");
-
     if (!lista) return;
 
     try {
@@ -1345,7 +1076,6 @@ async function carregarCartoesOrcamento() {
             : (resposta.cartoes || []);
 
         renderizarCartoesOrcamento();
-
     } catch (erro) {
         console.error("Erro ao carregar cartões para orçamento:", erro);
         lista.innerHTML = "<small>Não foi possível carregar os cartões.</small>";
@@ -1354,7 +1084,6 @@ async function carregarCartoesOrcamento() {
 
 function renderizarCartoesOrcamento(idsSelecionados = null) {
     const lista = document.getElementById("listaCartoesOrcamento");
-
     if (!lista) return;
 
     if (!cartoesDisponiveisOrcamento.length) {
@@ -1369,46 +1098,32 @@ function renderizarCartoesOrcamento(idsSelecionados = null) {
     lista.innerHTML = `
         <label class="opcao-cartao-orcamento opcao-todos-cartoes">
             <span>Todos os cartões</span>
-            <input
-                type="checkbox"
-                id="orcamentoTodosCartoes"
-                ${todos ? "checked" : ""}
-            >
+            <input type="checkbox" id="orcamentoTodosCartoes"
+                ${todos ? "checked" : ""}>
         </label>
-
         <div class="divisor-cartoes-orcamento"></div>
-
         ${cartoesDisponiveisOrcamento.map(cartao => `
             <label class="opcao-cartao-orcamento">
                 <span>${escaparHTML(cartao.nome)}</span>
-
-                <input
-                    type="checkbox"
-                    class="orcamento-cartao-checkbox"
+                <input type="checkbox" class="orcamento-cartao-checkbox"
                     value="${Number(cartao.id)}"
                     ${todos || ids.has(Number(cartao.id)) ? "checked" : ""}
-                    ${todos ? "disabled" : ""}
-                >
+                    ${todos ? "disabled" : ""}>
             </label>
         `).join("")}
     `;
 
-    const todosCheckbox = document.getElementById("orcamentoTodosCartoes");
-
-    todosCheckbox.addEventListener("change", () => {
-        if (todosCheckbox.checked) {
-            renderizarCartoesOrcamento(null);
-        } else {
-            renderizarCartoesOrcamento([]);
+    document.getElementById("orcamentoTodosCartoes").addEventListener(
+        "change",
+        evento => {
+            renderizarCartoesOrcamento(evento.target.checked ? null : []);
         }
-    });
+    );
 
     lista.querySelectorAll(".orcamento-cartao-checkbox").forEach(input => {
         input.addEventListener("change", () => {
             const marcados = [
-                ...lista.querySelectorAll(
-                    ".orcamento-cartao-checkbox:checked"
-                )
+                ...lista.querySelectorAll(".orcamento-cartao-checkbox:checked")
             ].map(item => Number(item.value));
 
             renderizarCartoesOrcamento(marcados);
@@ -1420,13 +1135,12 @@ function renderizarCartoesOrcamento(idsSelecionados = null) {
 
 function atualizarTextoCartoesOrcamento() {
     const texto = document.getElementById("textoCartoesOrcamento");
-
     if (!texto) return;
 
     const selecionados = [
-        ...(document.querySelectorAll(
+        ...document.querySelectorAll(
             "#listaCartoesOrcamento .orcamento-cartao-checkbox:checked"
-        ))
+        )
     ];
 
     if (
@@ -1437,14 +1151,13 @@ function atualizarTextoCartoesOrcamento() {
         return;
     }
 
-    if (selecionados.length === 0) {
+    if (!selecionados.length) {
         texto.textContent = "Selecione os cartões";
         return;
     }
 
     if (selecionados.length === 1) {
         const id = Number(selecionados[0].value);
-
         const cartao = cartoesDisponiveisOrcamento.find(
             item => Number(item.id) === id
         );
@@ -1459,9 +1172,7 @@ function atualizarTextoCartoesOrcamento() {
 function obterCartoesSelecionadosOrcamento() {
     const todos = document.getElementById("orcamentoTodosCartoes");
 
-    if (!todos || todos.checked) {
-        return null;
-    }
+    if (!todos || todos.checked) return null;
 
     return [
         ...document.querySelectorAll(
@@ -1490,16 +1201,16 @@ async function carregarOrcamentos() {
 
     if (!lista || !campoMes?.value) return;
 
-    lista.innerHTML =
-        '<p class="empty">Carregando orçamentos...</p>';
+    lista.innerHTML = '<p class="empty">Carregando orçamentos...</p>';
 
     try {
+        const mes = campoMes.value;
+
         const dados = await requisicao(
-            `${API_URL}/orcamentos?mes=${encodeURIComponent(campoMes.value)}`
+            `${API_URL}/orcamentos?mes=${encodeURIComponent(mes)}`
         );
 
         const orcamentos = dados.orcamentos || [];
-
         const contador = document.getElementById("totalOrcamentos");
 
         if (contador) {
@@ -1509,9 +1220,7 @@ async function carregarOrcamentos() {
 
         if (!orcamentos.length) {
             lista.innerHTML = `
-                <p class="empty">
-                    Nenhum orçamento cadastrado para este mês.
-                </p>
+                <p class="empty">Nenhum orçamento cadastrado para este mês.</p>
             `;
             return;
         }
@@ -1519,11 +1228,8 @@ async function carregarOrcamentos() {
         lista.innerHTML = "";
 
         orcamentos.forEach(orcamento => {
-            const percentual = Math.max(
-                0,
-                Number(orcamento.percentual || 0)
-            );
-
+            const percentual = Math.max(0, Number(orcamento.percentual || 0));
+            const percentualVisual = Math.min(percentual, 100);
             const ultrapassou = Boolean(orcamento.ultrapassou);
             const restante = Number(orcamento.restante || 0);
 
@@ -1534,42 +1240,20 @@ async function carregarOrcamentos() {
                 <div class="orcamento-topo">
                     <div>
                         <strong>${escaparHTML(orcamento.categoria)}</strong>
-
                         <span class="orcamento-status ${ultrapassou ? "ultrapassou" : "dentro-limite"}">
                             ${ultrapassou ? "Limite ultrapassado" : "Dentro do limite"}
                         </span>
                     </div>
-
                     <div class="orcamento-acoes">
-                        <button
-                            type="button"
-                            class="btn-editar-orcamento"
-                            title="Editar orçamento"
-                        >
-                            Editar
-                        </button>
-
-                        <button
-                            type="button"
-                            class="btn-excluir-orcamento"
-                            title="Excluir orçamento"
-                        >
-                            ✕
-                        </button>
+                        <button type="button" class="btn-editar-orcamento"
+                            title="Editar orçamento">Editar</button>
+                        <button type="button" class="btn-excluir-orcamento"
+                            title="Excluir orçamento">✕</button>
                     </div>
                 </div>
-
                 <div class="orcamento-valores">
-                    <div>
-                        <span>Gasto</span>
-                        <strong>${formatarMoeda(orcamento.gasto)}</strong>
-                    </div>
-
-                    <div>
-                        <span>Limite</span>
-                        <strong>${formatarMoeda(orcamento.limite)}</strong>
-                    </div>
-
+                    <div><span>Gasto</span><strong>${formatarMoeda(orcamento.gasto)}</strong></div>
+                    <div><span>Limite</span><strong>${formatarMoeda(orcamento.limite)}</strong></div>
                     <div>
                         <span>${ultrapassou ? "Excedido" : "Restante"}</span>
                         <strong class="${ultrapassou ? "red-text" : "green-text"}">
@@ -1577,14 +1261,10 @@ async function carregarOrcamentos() {
                         </strong>
                     </div>
                 </div>
-
                 <div class="orcamento-barra">
-                    <div
-                        class="orcamento-progresso ${ultrapassou ? "barra-estourada" : ""}"
-                        style="width:${Math.min(percentual, 100)}%"
-                    ></div>
+                    <div class="orcamento-progresso ${ultrapassou ? "barra-estourada" : ""}"
+                        style="width:${percentualVisual}%"></div>
                 </div>
-
                 <div class="orcamento-rodape">
                     <span>${percentual.toFixed(1)}% utilizado</span>
                 </div>
@@ -1602,14 +1282,10 @@ async function carregarOrcamentos() {
 
             lista.appendChild(card);
         });
-
     } catch (erro) {
         console.error("Erro ao carregar orçamentos:", erro);
-
         lista.innerHTML = `
-            <p class="empty">
-                Não foi possível carregar os orçamentos.
-            </p>
+            <p class="empty">Não foi possível carregar os orçamentos.</p>
         `;
     }
 }
@@ -1624,19 +1300,12 @@ async function salvarOrcamento(evento) {
     const botao = document.getElementById("btnSalvarOrcamento");
     const mensagem = document.getElementById("mensagemOrcamento");
 
-    const categoria =
-        document.getElementById("orcamentoCategoria")?.value;
-
-    const valor =
-        Number(document.getElementById("orcamentoValor")?.value);
-
-    const mes =
-        document.getElementById("mesFiltro")?.value;
+    const categoria = document.getElementById("orcamentoCategoria")?.value;
+    const valor = Number(document.getElementById("orcamentoValor")?.value);
+    const mes = document.getElementById("mesFiltro")?.value;
 
     if (!categoria || !mes || !Number.isFinite(valor) || valor <= 0) {
-        mensagem.textContent =
-            "Preencha a categoria e um limite válido.";
-
+        mensagem.textContent = "Preencha a categoria e um limite válido.";
         mensagem.className = "form-message error";
         return;
     }
@@ -1649,7 +1318,6 @@ async function salvarOrcamento(evento) {
         if (Array.isArray(cartoesIds) && cartoesIds.length === 0) {
             mensagem.textContent =
                 "Selecione todos os cartões ou pelo menos um cartão.";
-
             mensagem.className = "form-message error";
             return;
         }
@@ -1679,13 +1347,12 @@ async function salvarOrcamento(evento) {
 
         carregarCategoriasOrcamento();
         renderizarCartoesOrcamento(null);
+        atualizarVisibilidadeCartoesOrcamento();
 
         await carregarOrcamentos();
-
     } catch (erro) {
         mensagem.textContent = erro.message;
         mensagem.className = "form-message error";
-
     } finally {
         botao.disabled = false;
         botao.textContent = "Salvar orçamento";
@@ -1709,14 +1376,10 @@ function editarOrcamento(orcamento) {
         let ids = orcamento.cartoes_ids;
 
         if (typeof ids === "string") {
-            ids = ids.trim()
-                ? ids.split(",").map(Number)
-                : null;
+            ids = ids.trim() ? ids.split(",").map(Number) : null;
         }
 
-        if (!Array.isArray(ids)) {
-            ids = null;
-        }
+        if (!Array.isArray(ids)) ids = null;
 
         renderizarCartoesOrcamento(ids);
         atualizarTextoCartoesOrcamento();
@@ -1725,9 +1388,7 @@ function editarOrcamento(orcamento) {
     const conteudo = document.getElementById("conteudoOrcamentos");
     const botao = document.getElementById("btnExpandirOrcamentos");
 
-    if (conteudo?.hidden) {
-        botao?.click();
-    }
+    if (conteudo?.hidden) botao?.click();
 
     document.getElementById("orcamentos")?.scrollIntoView({
         behavior: "smooth"
@@ -1736,10 +1397,7 @@ function editarOrcamento(orcamento) {
     valor.focus();
 
     const mensagem = document.getElementById("mensagemOrcamento");
-
-    mensagem.textContent =
-        "Altere o limite e clique em Salvar orçamento.";
-
+    mensagem.textContent = "Altere o limite e clique em Salvar orçamento.";
     mensagem.className = "form-message";
 }
 
@@ -1748,9 +1406,7 @@ function editarOrcamento(orcamento) {
 // ======================================
 
 async function excluirOrcamento(id) {
-    if (!confirm("Deseja realmente excluir este orçamento?")) {
-        return;
-    }
+    if (!confirm("Deseja realmente excluir este orçamento?")) return;
 
     try {
         await requisicao(`${API_URL}/orcamentos/${id}`, {
@@ -1758,14 +1414,7 @@ async function excluirOrcamento(id) {
         });
 
         await carregarOrcamentos();
-
     } catch (erro) {
         alert(erro.message);
     }
 }
-
-// Atualiza a seleção de cartões quando a categoria muda.
-document.getElementById("orcamentoCategoria")?.addEventListener(
-    "change",
-    atualizarVisibilidadeCartoesOrcamento
-);
