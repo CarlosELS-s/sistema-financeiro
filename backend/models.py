@@ -249,6 +249,10 @@ class FaturaCartao(Base):
 # COMPRAS NO CARTÃO
 # =====================================
 
+# =====================================
+# COMPRAS NO CARTÃO
+# =====================================
+
 class CompraCartao(Base):
     __tablename__ = "compras_cartao"
 
@@ -260,6 +264,14 @@ class CompraCartao(Base):
         nullable=False
     )
 
+    # Identifica todas as parcelas de uma mesma compra.
+    # Nullable para preservar as compras antigas.
+    grupo_compra = Column(
+        String(36),
+        nullable=True,
+        index=True
+    )
+
     descricao = Column(String(200), nullable=False)
     categoria = Column(String(100), nullable=False)
     valor_centavos = Column(Integer, nullable=False)
@@ -269,8 +281,6 @@ class CompraCartao(Base):
         DateTime(timezone=True),
         server_default=func.now()
     )
-
-
 # =====================================
 # ORÇAMENTOS MENSAIS POR CATEGORIA
 # =====================================

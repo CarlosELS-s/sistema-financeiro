@@ -2,6 +2,8 @@ const API_URL = "/api";
 
 let cartoes = [];
 let cartaoEditandoId = null;
+let cartaoFaturaAtual = null;
+
 
 // =====================================
 // AUTENTICAÇÃO
@@ -26,6 +28,7 @@ function verificarAutenticacaoCartoes() {
     return true;
 }
 
+
 // =====================================
 // UTILITÁRIOS
 // =====================================
@@ -36,12 +39,14 @@ const dinheiro = valor =>
         currency: "BRL"
     });
 
+
 function mensagem(elemento, texto, erro = false) {
     if (!elemento) return;
 
     elemento.textContent = texto;
     elemento.style.color = erro ? "#dc2626" : "#16a34a";
 }
+
 
 // =====================================
 // REQUISIÇÕES COM JWT
@@ -87,6 +92,7 @@ async function requisicao(url, opcoes = {}) {
     return dados;
 }
 
+
 // =====================================
 // FORMULÁRIO DE CADASTRO E EDIÇÃO
 // =====================================
@@ -100,7 +106,6 @@ function inicializarCadastroCartao() {
         cancelarEdicaoCartao();
 
         document.getElementById("formularioCartao").hidden = false;
-
         document.getElementById("nomeCartao").focus();
     });
 
@@ -184,6 +189,7 @@ function inicializarCadastroCartao() {
     });
 }
 
+
 // =====================================
 // CANCELAR EDIÇÃO
 // =====================================
@@ -218,6 +224,7 @@ function cancelarEdicaoCartao() {
 
     mensagem(document.getElementById("mensagemCartao"), "");
 }
+
 
 // =====================================
 // EDITAR CARTÃO
@@ -272,6 +279,7 @@ function editarCartao(id) {
     });
 }
 
+
 // =====================================
 // EXCLUIR CARTÃO
 // =====================================
@@ -295,26 +303,27 @@ async function excluirCartao(id) {
             method: "DELETE"
         });
 
-        alert("Cartão excluído com sucesso!");
+        alert("Cartão desativado com sucesso!");
 
         if (cartaoEditandoId === id) {
             cancelarEdicaoCartao();
         }
 
-        await carregarCartoes();
+        if (cartaoFaturaAtual === String(id)) {
+            cartaoFaturaAtual = null;
 
-        const select = document.getElementById("filtroCartaoFatura");
-
-        if (select.value === String(id)) {
             document.getElementById("listaFaturas").innerHTML =
                 "<p>Selecione um cartão para visualizar as compras.</p>";
         }
+
+        await carregarCartoes();
 
     } catch (erro) {
         alert(erro.message);
         console.error("Erro ao excluir cartão:", erro);
     }
 }
+
 
 // =====================================
 // LISTAR CARTÕES
@@ -340,6 +349,7 @@ async function carregarCartoes() {
             document.getElementById("listaFaturas").innerHTML =
                 "<p>Cadastre um cartão para começar.</p>";
 
+            cartaoFaturaAtual = null;
             return;
         }
 
@@ -416,6 +426,9 @@ async function carregarCartoes() {
             cartoes.some(c => String(c.id) === cartaoSelecionado)
         ) {
             selectFatura.value = cartaoSelecionado;
+            cartaoFaturaAtual = cartaoSelecionado;
+        } else {
+            cartaoFaturaAtual = null;
         }
 
     } catch (erro) {
@@ -423,6 +436,7 @@ async function carregarCartoes() {
         console.error("Erro ao carregar cartões:", erro);
     }
 }
+
 
 // =====================================
 // FILTRO DE FATURAS
@@ -432,8 +446,10 @@ function inicializarFiltroFaturas() {
     const select = document.getElementById("filtroCartaoFatura");
 
     select.addEventListener("change", event => {
-        if (event.target.value) {
-            carregarFaturas(event.target.value);
+        cartaoFaturaAtual = event.target.value || null;
+
+        if (cartaoFaturaAtual) {
+            carregarFaturas(cartaoFaturaAtual);
         } else {
             document.getElementById("listaFaturas").innerHTML =
                 "<p>Selecione um cartão para visualizar as compras.</p>";
@@ -441,12 +457,164 @@ function inicializarFiltroFaturas() {
     });
 }
 
+
+// =====================================
+// AGRUPAR COMPRAS
+// =====================================
+
+function agruparCompras(faturas) {
+    const grupos = new Map();
+
+    faturas.forEach(fatura => {
+        (fatura.compras || []).forEach(compra => {
+            const descricao = compra.descricao || "Compra";
+
+            const resultado = descricao.match(/\s\((\d+)\/(\d+)\)$/);
+
+            const nome = resultado
+                ? descricao.replace(/\s\(\d+\/\d+\)$/, "")
+                : descricao;
+
+            const quantidade = resultado
+                ? Number(resultado[2])
+                : 1;
+
+            const numeroParcela = resultado
+                ? Number(resultado[1])
+                : 1;
+
+            const chave = compra.grupo_compra
+                ? `grupo-${compra.grupo_compra}`
+                : `antiga-${compra.id}`;
+
+            if (!grupos.has(chave)) {
+                grupos.set(chave, {
+                    grupo_compra: compra.grupo_compra || null,
+                    nome,
+                    quantidade,
+                    total: 0,
+                    valorParcela: Number(compra.valor_centavos || 0),
+                    parcelasEncontradas: 0,
+                    parcelas: [],
+                    faturasPagas: false
+                });
+            }
+
+            const grupo = grupos.get(chave);
+
+            grupo.total += Number(compra.valor_centavos || 0);
+            grupo.parcelasEncontradas += 1;
+
+            grupo.quantidade = Math.max(
+                grupo.quantidade,
+                quantidade
+            );
+
+            grupo.parcelas.push({
+                id: compra.id,
+                numero: numeroParcela,
+                valor: Number(compra.valor_centavos || 0),
+                fatura_id: fatura.id,
+                status_fatura: fatura.status
+            });
+
+            if (fatura.status === "paga") {
+                grupo.faturasPagas = true;
+            }
+        });
+    });
+
+    return Array.from(grupos.values());
+}
+
+
+// =====================================
+// EXCLUIR COMPRA E TODAS AS PARCELAS
+// =====================================
+
+async function excluirCompraCartao(grupoCompra, nome, quantidade) {
+    if (!grupoCompra) return;
+
+    const confirmar = confirm(
+        `Deseja excluir a compra "${nome}"?\n\n` +
+        `Todas as ${quantidade} parcelas serão excluídas.\n\n` +
+        "Esta operação não poderá ser desfeita."
+    );
+
+    if (!confirmar) return;
+
+    try {
+        const resultado = await requisicao(
+            `/cartoes/compras/grupo/${encodeURIComponent(grupoCompra)}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+        alert(
+            resultado.mensagem ||
+            "Compra excluída com sucesso."
+        );
+
+        await carregarCartoes();
+
+        if (cartaoFaturaAtual) {
+            await carregarFaturas(cartaoFaturaAtual);
+        }
+
+    } catch (erro) {
+        alert(erro.message);
+        console.error("Erro ao excluir compra:", erro);
+    }
+}
+
+
+// =====================================
+// EXCLUIR UMA PARCELA INDIVIDUAL
+// =====================================
+
+async function excluirParcelaCartao(parcelaId, nome, numero) {
+    const confirmar = confirm(
+        `Deseja excluir a parcela ${numero} da compra "${nome}"?\n\n` +
+        "Somente esta parcela será excluída."
+    );
+
+    if (!confirmar) return;
+
+    try {
+        const resultado = await requisicao(
+            `/cartoes/compras/${parcelaId}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+        alert(
+            resultado.mensagem ||
+            "Parcela excluída com sucesso."
+        );
+
+        await carregarCartoes();
+
+        if (cartaoFaturaAtual) {
+            await carregarFaturas(cartaoFaturaAtual);
+        }
+
+    } catch (erro) {
+        alert(erro.message);
+        console.error("Erro ao excluir parcela:", erro);
+    }
+}
+
+
 // =====================================
 // LISTAR COMPRAS E VALORES
 // =====================================
 
 async function carregarFaturas(cartaoId) {
     const lista = document.getElementById("listaFaturas");
+
+    cartaoFaturaAtual = String(cartaoId);
 
     lista.innerHTML = "<p>Carregando faturas...</p>";
 
@@ -462,56 +630,29 @@ async function carregarFaturas(cartaoId) {
             return;
         }
 
-        const compras = new Map();
+        const compras = agruparCompras(faturas);
 
-        faturas.forEach(fatura => {
-            (fatura.compras || []).forEach(compra => {
-                const descricao = compra.descricao || "Compra";
-
-                const resultado = descricao.match(/\s\((\d+)\/(\d+)\)$/);
-
-                const nome = resultado
-                    ? descricao.replace(/\s\(\d+\/\d+\)$/, "")
-                    : descricao;
-
-                const quantidade = resultado
-                    ? Number(resultado[2])
-                    : 1;
-
-                const valorParcela = Number(compra.valor_centavos || 0);
-
-                if (!compras.has(nome)) {
-                    compras.set(nome, {
-                        quantidade,
-                        total: 0,
-                        valorParcela
-                    });
-                }
-
-                const item = compras.get(nome);
-
-                item.total += valorParcela;
-                item.quantidade = Math.max(item.quantidade, quantidade);
-            });
-        });
-
-        if (compras.size === 0) {
+        if (compras.length === 0) {
             lista.innerHTML = "<p>Nenhuma compra encontrada.</p>";
             return;
         }
 
-        compras.forEach((compra, nome) => {
+        compras.forEach(compra => {
             const linha = document.createElement("div");
             linha.className = "card";
             linha.style.marginBottom = "14px";
 
             const descricao = document.createElement("h3");
-            descricao.textContent = nome;
+            descricao.textContent = compra.nome;
 
             const parcelas = document.createElement("p");
             parcelas.textContent = compra.quantidade > 1
-                ? `${compra.quantidade} vezes`
+                ? `${compra.quantidade} parcelas`
                 : "À vista";
+
+            const progresso = document.createElement("p");
+            progresso.textContent =
+                `${compra.parcelasEncontradas} de ${compra.quantidade} parcelas cadastradas`;
 
             const valorParcela = document.createElement("p");
             valorParcela.textContent =
@@ -524,9 +665,72 @@ async function carregarFaturas(cartaoId) {
             linha.append(
                 descricao,
                 parcelas,
+                progresso,
                 valorParcela,
                 total
             );
+
+            const acoes = document.createElement("div");
+            acoes.className = "form-actions";
+
+            if (compra.grupo_compra) {
+                // Compra nova: permite excluir todas as parcelas juntas.
+
+                const btnExcluirGrupo = document.createElement("button");
+
+                btnExcluirGrupo.type = "button";
+                btnExcluirGrupo.className = "btn-secondary";
+                btnExcluirGrupo.textContent = "Excluir compra";
+
+                btnExcluirGrupo.disabled = compra.faturasPagas;
+
+                btnExcluirGrupo.addEventListener("click", () => {
+                    excluirCompraCartao(
+                        compra.grupo_compra,
+                        compra.nome,
+                        compra.quantidade
+                    );
+                });
+
+                acoes.appendChild(btnExcluirGrupo);
+
+            } else {
+                // Compra antiga: cada parcela aparece separadamente.
+                // Assim, é possível excluir cada registro pelo próprio ID.
+
+                const parcela = compra.parcelas[0];
+
+                const btnExcluirParcela = document.createElement("button");
+
+                btnExcluirParcela.type = "button";
+                btnExcluirParcela.className = "btn-secondary";
+                btnExcluirParcela.textContent = "Excluir parcela";
+
+                btnExcluirParcela.disabled = compra.faturasPagas;
+
+                btnExcluirParcela.addEventListener("click", () => {
+                    excluirParcelaCartao(
+                        parcela.id,
+                        compra.nome,
+                        parcela.numero
+                    );
+                });
+
+                acoes.appendChild(btnExcluirParcela);
+            }
+
+            linha.appendChild(acoes);
+
+            if (compra.faturasPagas) {
+                const avisoPaga = document.createElement("p");
+
+                avisoPaga.textContent =
+                    "Uma ou mais parcelas pertencem a faturas pagas. A exclusão está bloqueada.";
+
+                avisoPaga.style.color = "#dc2626";
+
+                linha.appendChild(avisoPaga);
+            }
 
             lista.appendChild(linha);
         });
@@ -536,6 +740,7 @@ async function carregarFaturas(cartaoId) {
         console.error("Erro ao carregar compras:", erro);
     }
 }
+
 
 // =====================================
 // INICIALIZAÇÃO
@@ -548,4 +753,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     inicializarFiltroFaturas();
 
     await carregarCartoes();
-}); 
+});

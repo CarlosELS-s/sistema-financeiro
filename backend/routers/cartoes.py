@@ -1,4 +1,4 @@
-
+import uuid
 import calendar
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
@@ -228,6 +228,9 @@ def registrar_compra_parcelada(
     valor_base = valor_centavos // parcelas
     resto = valor_centavos % parcelas
 
+    # Um único UUID identifica todas as parcelas desta compra.
+    grupo_compra = str(uuid.uuid4())
+
     compras = []
 
     for numero in range(1, parcelas + 1):
@@ -259,7 +262,8 @@ def registrar_compra_parcelada(
             ),
             categoria=categoria,
             valor_centavos=valor_parcela,
-            data=data_compra
+            data=data_compra,
+            grupo_compra=grupo_compra
         )
 
         db.add(compra)
@@ -484,7 +488,8 @@ def registrar_compra(
             "parcelas": len(compras),
             "valor_total_centavos": para_centavos(
                 dados.valor
-            )
+            ),
+            "grupo_compra": compras[0].grupo_compra
         }
 
     except Exception:
@@ -552,13 +557,126 @@ def listar_faturas(
                     "descricao": compra.descricao,
                     "categoria": compra.categoria,
                     "valor_centavos": compra.valor_centavos,
-                    "data": compra.data
+                    "data": compra.data,
+                    "grupo_compra": compra.grupo_compra
                 }
                 for compra in compras
             ]
         })
 
     return resultado
+
+
+# =====================================
+# EXCLUIR COMPRA E TODAS AS PARCELAS
+# =====================================
+
+@router.delete("/compras/grupo/{grupo_compra}")
+def excluir_compra_grupo(
+    grupo_compra: str,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
+):
+    compras = db.query(CompraCartao).join(
+        FaturaCartao,
+        CompraCartao.fatura_id == FaturaCartao.id
+    ).join(
+        CartaoCredito,
+        FaturaCartao.cartao_id == CartaoCredito.id
+    ).filter(
+        CompraCartao.grupo_compra == grupo_compra,
+        CartaoCredito.usuario_id == usuario.id
+    ).all()
+
+    if not compras:
+        raise HTTPException(
+            404,
+            "Compra não encontrada."
+        )
+
+    faturas_pagas = db.query(FaturaCartao.id).filter(
+    FaturaCartao.id.in_(
+        [compra.fatura_id for compra in compras]
+    ),
+    FaturaCartao.status == "paga"
+    ).first()
+
+    if faturas_pagas:
+            raise HTTPException(
+                400,
+                "Não é possível excluir uma compra que possui parcelas em faturas pagas."
+            )
+
+    try:
+        for compra in compras:
+            db.delete(compra)
+
+        db.commit()
+
+        return {
+            "mensagem": "Compra e todas as parcelas excluídas com sucesso.",
+            "parcelas_excluidas": len(compras)
+        }
+
+    except Exception:
+        db.rollback()
+        raise
+
+
+# =====================================
+# EXCLUIR UMA PARCELA INDIVIDUAL
+# =====================================
+
+@router.delete("/compras/{compra_id}")
+def excluir_parcela(
+    compra_id: int,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_atual)
+):
+    compra = db.query(CompraCartao).join(
+        FaturaCartao,
+        CompraCartao.fatura_id == FaturaCartao.id
+    ).join(
+        CartaoCredito,
+        FaturaCartao.cartao_id == CartaoCredito.id
+    ).filter(
+        CompraCartao.id == compra_id,
+        CartaoCredito.usuario_id == usuario.id
+    ).first()
+
+    if not compra:
+        raise HTTPException(
+            404,
+            "Parcela não encontrada."
+        )
+
+    fatura = db.query(FaturaCartao).filter(
+        FaturaCartao.id == compra.fatura_id
+    ).first()
+
+    if not fatura:
+        raise HTTPException(
+            404,
+            "Fatura não encontrada."
+        )
+
+    if fatura.status == "paga":
+        raise HTTPException(
+            400,
+            "Não é possível excluir uma parcela de uma fatura paga."
+        )
+
+    try:
+        db.delete(compra)
+        db.commit()
+
+        return {
+            "mensagem": "Parcela excluída com sucesso."
+        }
+
+    except Exception:
+        db.rollback()
+        raise
 
 
 # =====================================
@@ -572,9 +690,6 @@ def pagar_fatura(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_usuario_atual)
 ):
-    # A fatura só pode ser acessada se pertencer
-    # a um cartão do usuário autenticado.
-
     fatura = db.query(FaturaCartao).join(
         CartaoCredito,
         CartaoCredito.id == FaturaCartao.cartao_id
@@ -640,4 +755,3 @@ def pagar_fatura(
         "valor_pago_centavos": total,
         "transacao_id": transacao.id
     }
-#adicionado editar cartao
