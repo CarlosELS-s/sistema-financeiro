@@ -608,139 +608,96 @@ async function excluirParcelaCartao(parcelaId, nome, numero) {
 
 
 // =====================================
-// LISTAR COMPRAS E VALORES
+// LISTAR COMPRAS AGRUPADAS
 // =====================================
 
 async function carregarFaturas(cartaoId) {
     const lista = document.getElementById("listaFaturas");
 
-    cartaoFaturaAtual = String(cartaoId);
-
-    lista.innerHTML = "<p>Carregando faturas...</p>";
+    lista.innerHTML = "<p>Carregando compras...</p>";
 
     try {
-        const faturas = await requisicao(
+        const resposta = await requisicao(
             `/cartoes/${cartaoId}/faturas`
         );
 
         lista.innerHTML = "";
 
-        if (!Array.isArray(faturas) || faturas.length === 0) {
+        // Compatibilidade com os dois formatos da API.
+        const comprasAgrupadas = Array.isArray(resposta)
+            ? agruparCompras(resposta)
+            : resposta.compras_agrupadas || [];
+
+        if (comprasAgrupadas.length === 0) {
             lista.innerHTML = "<p>Nenhuma compra encontrada.</p>";
             return;
         }
 
-        const compras = agruparCompras(faturas);
-
-        if (compras.length === 0) {
-            lista.innerHTML = "<p>Nenhuma compra encontrada.</p>";
-            return;
-        }
-
-        compras.forEach(compra => {
+        comprasAgrupadas.forEach(compra => {
             const linha = document.createElement("div");
             linha.className = "card";
             linha.style.marginBottom = "14px";
 
             const descricao = document.createElement("h3");
-            descricao.textContent = compra.nome;
+            descricao.textContent = compra.descricao || compra.nome || "Compra";
 
             const parcelas = document.createElement("p");
-            parcelas.textContent = compra.quantidade > 1
-                ? `${compra.quantidade} parcelas`
-                : "À vista";
-
-            const progresso = document.createElement("p");
-            progresso.textContent =
-                `${compra.parcelasEncontradas} de ${compra.quantidade} parcelas cadastradas`;
+            parcelas.textContent =
+                Number(compra.quantidade_parcelas || compra.quantidade || 1) > 1
+                    ? `${compra.quantidade_parcelas || compra.quantidade} parcelas`
+                    : "À vista";
 
             const valorParcela = document.createElement("p");
             valorParcela.textContent =
-                `Valor da parcela: ${dinheiro(compra.valorParcela)}`;
+                `Valor da parcela: ${dinheiro(
+                    compra.valor_parcela_centavos ?? compra.valorParcela
+                )}`;
 
             const total = document.createElement("p");
             total.textContent =
-                `Valor total: ${dinheiro(compra.total)}`;
+                `Valor total da compra: ${dinheiro(
+                    compra.valor_total_centavos ?? compra.total
+                )}`;
 
             linha.append(
                 descricao,
                 parcelas,
-                progresso,
                 valorParcela,
                 total
             );
 
-            const acoes = document.createElement("div");
-            acoes.className = "form-actions";
+            // Espaçamento antes dos botões.
+            const espaco = document.createElement("div");
+            espaco.style.height = "18px";
+
+            linha.appendChild(espaco);
 
             if (compra.grupo_compra) {
-                // Compra nova: permite excluir todas as parcelas juntas.
+                const botaoExcluir = document.createElement("button");
 
-                const btnExcluirGrupo = document.createElement("button");
+                botaoExcluir.type = "button";
+                botaoExcluir.className = "btn-secondary";
+                botaoExcluir.textContent = "Excluir compra";
 
-                btnExcluirGrupo.type = "button";
-                btnExcluirGrupo.className = "btn-secondary";
-                btnExcluirGrupo.textContent = "Excluir compra";
-
-                btnExcluirGrupo.disabled = compra.faturasPagas;
-
-                btnExcluirGrupo.addEventListener("click", () => {
+                botaoExcluir.addEventListener("click", () => {
                     excluirCompraCartao(
                         compra.grupo_compra,
-                        compra.nome,
-                        compra.quantidade
+                        compra.descricao || compra.nome,
+                        compra.quantidade_parcelas || compra.quantidade
                     );
                 });
 
-                acoes.appendChild(btnExcluirGrupo);
-
-            } else {
-                // Compra antiga: cada parcela aparece separadamente.
-                // Assim, é possível excluir cada registro pelo próprio ID.
-
-                const parcela = compra.parcelas[0];
-
-                const btnExcluirParcela = document.createElement("button");
-
-                btnExcluirParcela.type = "button";
-                btnExcluirParcela.className = "btn-secondary";
-                btnExcluirParcela.textContent = "Excluir parcela";
-
-                btnExcluirParcela.disabled = compra.faturasPagas;
-
-                btnExcluirParcela.addEventListener("click", () => {
-                    excluirParcelaCartao(
-                        parcela.id,
-                        compra.nome,
-                        parcela.numero
-                    );
-                });
-
-                acoes.appendChild(btnExcluirParcela);
-            }
-
-            linha.appendChild(acoes);
-
-            if (compra.faturasPagas) {
-                const avisoPaga = document.createElement("p");
-
-                avisoPaga.textContent =
-                    "Uma ou mais parcelas pertencem a faturas pagas. A exclusão está bloqueada.";
-
-                avisoPaga.style.color = "#dc2626";
-
-                linha.appendChild(avisoPaga);
+                linha.appendChild(botaoExcluir);
             }
 
             lista.appendChild(linha);
         });
 
     } catch (erro) {
-        lista.textContent = erro.message;
-        console.error("Erro ao carregar compras:", erro);
+        lista.innerHTML = `<p>Erro ao carregar compras: ${erro.message}</p>`;
+        console.error("Erro ao carregar faturas:", erro);
     }
 }
-
 
 // =====================================
 // INICIALIZAÇÃO

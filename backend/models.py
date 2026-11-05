@@ -314,7 +314,17 @@ class Orcamento(Base):
 
     valor_limite_centavos = Column(Integer, nullable=False)
     cartoes_ids = Column(String(1000), nullable=True)
+
     fixado = Column(Boolean, default=False, nullable=False)
+
+    # Identifica o orçamento original que gerou esta cópia.
+    # NULL significa que não é uma cópia automática.
+    origem_fixa_id = Column(
+        Integer,
+        ForeignKey("orcamentos.id"),
+        nullable=True,
+        index=True
+    )
 
     criado_em = Column(
         DateTime(timezone=True),

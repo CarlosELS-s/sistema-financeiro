@@ -193,7 +193,6 @@ def buscar_cartao_usuario(
 # =====================================
 # REGISTRAR COMPRA PARCELADA
 # =====================================
-
 def registrar_compra_parcelada(
     db: Session,
     cartao: CartaoCredito,
@@ -209,10 +208,7 @@ def registrar_compra_parcelada(
             "A quantidade de parcelas deve estar entre 1 e 60."
         )
 
-    utilizado = total_utilizado(
-        db,
-        cartao.id
-    )
+    utilizado = total_utilizado(db, cartao.id)
 
     if utilizado + valor_centavos > cartao.limite_centavos:
         raise HTTPException(
@@ -220,21 +216,17 @@ def registrar_compra_parcelada(
             "Esta compra ultrapassa o limite disponível do cartão."
         )
 
-    ano, mes, _ = calcular_periodo(
-        cartao,
-        data_compra
-    )
+    ano, mes, _ = calcular_periodo(cartao, data_compra)
 
     valor_base = valor_centavos // parcelas
     resto = valor_centavos % parcelas
 
-    # Um único UUID identifica todas as parcelas desta compra.
+    # Gera um identificador único para a compra inteira.
     grupo_compra = str(uuid.uuid4())
 
     compras = []
 
     for numero in range(1, parcelas + 1):
-
         valor_parcela = valor_base
 
         if numero <= resto:
@@ -255,6 +247,7 @@ def registrar_compra_parcelada(
 
         compra = CompraCartao(
             fatura_id=fatura.id,
+            grupo_compra=grupo_compra,
             descricao=(
                 f"{descricao} ({numero}/{parcelas})"
                 if parcelas > 1
@@ -262,8 +255,7 @@ def registrar_compra_parcelada(
             ),
             categoria=categoria,
             valor_centavos=valor_parcela,
-            data=data_compra,
-            grupo_compra=grupo_compra
+            data=data_compra
         )
 
         db.add(compra)
@@ -278,8 +270,6 @@ def registrar_compra_parcelada(
     db.flush()
 
     return compras
-
-
 # =====================================
 # CADASTRAR CARTÃO
 # =====================================
@@ -514,10 +504,7 @@ def listar_faturas(
     )
 
     if not cartao:
-        raise HTTPException(
-            404,
-            "Cartão não encontrado."
-        )
+        raise HTTPException(404, "Cartão não encontrado.")
 
     faturas = db.query(FaturaCartao).filter(
         FaturaCartao.cartao_id == cartao.id
@@ -526,10 +513,89 @@ def listar_faturas(
         FaturaCartao.mes.desc()
     ).all()
 
+    todas_compras = db.query(CompraCartao).join(
+        FaturaCartao,
+        CompraCartao.fatura_id == FaturaCartao.id
+    ).filter(
+        FaturaCartao.cartao_id == cartao.id
+    ).all()
+
+    grupos = {}
+
+    for compra in todas_compras:
+        chave = (
+            compra.grupo_compra
+            if compra.grupo_compra
+            else f"compra-antiga-{compra.id}"
+        )
+
+        if chave not in grupos:
+            grupos[chave] = {
+                "grupo_compra": compra.grupo_compra,
+                "descricao": compra.descricao,
+                "categoria": compra.categoria,
+                "valor_total_centavos": 0,
+                "valor_parcela_centavos": compra.valor_centavos,
+                "quantidade_parcelas": 0,
+                "parcelas": []
+            }
+
+        grupo = grupos[chave]
+
+        grupo["valor_total_centavos"] += compra.valor_centavos
+        grupo["quantidade_parcelas"] += 1
+
+        grupo["parcelas"].append({
+            "id": compra.id,
+            "fatura_id": compra.fatura_id,
+            "valor_centavos": compra.valor_centavos,
+            "data": compra.data
+        })
+
+    compras_agrupadas = []
+    print("\n========== DIAGNÓSTICO DAS COMPRAS ==========")
+
+    for compra in todas_compras:
+        print({
+            "id": compra.id,
+            "descricao": compra.descricao,
+            "valor_centavos": compra.valor_centavos,
+            "grupo_compra": compra.grupo_compra,
+            "data": str(compra.data)
+        })
+
+    print("=============================================\n")
+
+    for chave, grupo in grupos.items():
+        descricao = grupo["descricao"] or "Compra"
+
+        import re
+        resultado = re.search(
+            r"\s*\((\d+)/(\d+)\)$",
+            descricao
+        )
+
+        if resultado:
+            descricao = descricao[:resultado.start()].strip()
+            quantidade_total = int(resultado.group(2))
+        else:
+            quantidade_total = grupo["quantidade_parcelas"]
+
+        compras_agrupadas.append({
+            "grupo_compra": grupo["grupo_compra"],
+            "identificador": chave,
+            "descricao": descricao,
+            "categoria": grupo["categoria"],
+            "valor_parcela_centavos": grupo["valor_parcela_centavos"],
+            "valor_total_centavos": grupo["valor_total_centavos"],
+            "quantidade_parcelas": quantidade_total,
+            "parcelas_registradas": grupo["quantidade_parcelas"],
+            "parcelas": grupo["parcelas"]
+        })
+
     resultado = []
 
     for fatura in faturas:
-
         compras = db.query(CompraCartao).filter(
             CompraCartao.fatura_id == fatura.id
         ).order_by(
@@ -544,10 +610,7 @@ def listar_faturas(
             "mes": fatura.mes,
             "vencimento": fatura.vencimento,
             "status": fatura.status,
-            "total_centavos": total_fatura(
-                db,
-                fatura.id
-            ),
+            "total_centavos": total_fatura(db, fatura.id),
             "transacao_id": fatura.transacao_id,
             "data_pagamento": fatura.data_pagamento,
             "compras": [
@@ -564,9 +627,10 @@ def listar_faturas(
             ]
         })
 
-    return resultado
-
-
+    return {
+        "faturas": resultado,
+        "compras_agrupadas": compras_agrupadas
+    }
 # =====================================
 # EXCLUIR COMPRA E TODAS AS PARCELAS
 # =====================================

@@ -1,6 +1,6 @@
 import calendar
 import re
-
+import uuid
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from io import BytesIO
@@ -202,6 +202,9 @@ def registrar_compra_parcelada(
     valor_base = valor_centavos // quantidade_parcelas
     resto = valor_centavos % quantidade_parcelas
 
+    # Um identificador único para todas as parcelas desta compra.
+    grupo_compra = str(uuid.uuid4())
+
     compras = []
 
     for numero in range(1, quantidade_parcelas + 1):
@@ -220,11 +223,12 @@ def registrar_compra_parcelada(
         if fatura.status == "paga":
             raise HTTPException(
                 400,
-                f"A fatura de {mes:02d}/{ano} já está paga."
+                f"A fatura de {mes:02d}/{ano} já foi paga."
             )
 
         compra = CompraCartao(
             fatura_id=fatura.id,
+            grupo_compra=grupo_compra,
             descricao=(
                 f"{descricao} ({numero}/{quantidade_parcelas})"
                 if quantidade_parcelas > 1
@@ -247,7 +251,6 @@ def registrar_compra_parcelada(
     db.flush()
 
     return compras
-
 
 def subquery_pagamentos_usuario(usuario_id: int, db: Session):
     return db.query(
@@ -1197,32 +1200,25 @@ def criar_orcamentos_fixos_do_mes(
     ano: int,
     mes: int
 ):
-    """
-    Procura o orçamento mais recente de cada categoria
-    antes do mês consultado.
-
-    Se o último orçamento daquela categoria estiver fixado,
-    cria uma cópia para o mês atual.
-    """
-
-    orcamentos_existentes = db.query(Orcamento).filter(
+    # Não duplica uma categoria que já possui orçamento neste mês.
+    existentes = db.query(Orcamento).filter(
         Orcamento.usuario_id == usuario_id,
         Orcamento.ano == ano,
         Orcamento.mes == mes
     ).all()
 
     categorias_existentes = {
-        item.categoria for item in orcamentos_existentes
+        o.categoria for o in existentes
     }
 
+    # Busca orçamentos anteriores, do mais recente para o mais antigo.
     anteriores = db.query(Orcamento).filter(
         Orcamento.usuario_id == usuario_id,
         (
-            (Orcamento.ano < ano)
-            |
+            (Orcamento.ano < ano) |
             (
-                (Orcamento.ano == ano)
-                & (Orcamento.mes < mes)
+                (Orcamento.ano == ano) &
+                (Orcamento.mes < mes)
             )
         )
     ).order_by(
@@ -1237,8 +1233,6 @@ def criar_orcamentos_fixos_do_mes(
         if anterior.categoria not in ultimo_por_categoria:
             ultimo_por_categoria[anterior.categoria] = anterior
 
-    novos = []
-
     for categoria, anterior in ultimo_por_categoria.items():
 
         if categoria in categorias_existentes:
@@ -1247,6 +1241,8 @@ def criar_orcamentos_fixos_do_mes(
         if not anterior.fixado:
             continue
 
+        origem_id = anterior.origem_fixa_id or anterior.id
+
         novo = Orcamento(
             usuario_id=usuario_id,
             categoria=anterior.categoria,
@@ -1254,15 +1250,11 @@ def criar_orcamentos_fixos_do_mes(
             mes=mes,
             valor_limite_centavos=anterior.valor_limite_centavos,
             cartoes_ids=anterior.cartoes_ids,
-            fixado=True
+            fixado=True,
+            origem_fixa_id=origem_id
         )
 
         db.add(novo)
-        novos.append(novo)
-
-    if novos:
-        db.flush()
-
 
 @router.post("/orcamentos")
 def salvar_orcamento(
@@ -1367,7 +1359,6 @@ def salvar_orcamento(
 # =====================================
 # FIXAR / DESAFIXAR ORÇAMENTO
 # =====================================
-
 @router.post("/orcamentos/{orcamento_id}/fixar")
 def alternar_orcamento_fixo(
     orcamento_id: int,
@@ -1381,30 +1372,50 @@ def alternar_orcamento_fixo(
     )
 
     try:
-        orcamento.fixado = not orcamento.fixado
+        if orcamento.fixado:
+            origem_id = orcamento.origem_fixa_id or orcamento.id
 
-        db.commit()
-        db.refresh(orcamento)
+            original = obter_orcamento_usuario(
+                db,
+                origem_id,
+                usuario.id
+            )
 
-        return {
-            "mensagem": (
-                "Orçamento fixado para os próximos meses!"
-                if orcamento.fixado
-                else "Orçamento desafixado com sucesso!"
-            ),
-            "id": orcamento.id,
-            "fixado": orcamento.fixado
-        }
+            original.fixado = False
 
-    except Exception:
+            # Remove somente as cópias automáticas dessa origem.
+            db.query(Orcamento).filter(
+                Orcamento.usuario_id == usuario.id,
+                Orcamento.origem_fixa_id == origem_id
+            ).delete(synchronize_session=False)
+
+            db.commit()
+
+            return {
+                "mensagem": "Orçamento desafixado com sucesso!",
+                "id": orcamento_id,
+                "fixado": False
+            }
+
+        else:
+            orcamento.fixado = True
+            db.commit()
+            db.refresh(orcamento)
+
+            return {
+                "mensagem": "Orçamento fixado para os próximos meses!",
+                "id": orcamento.id,
+                "fixado": True
+            }
+
+    except Exception as erro:
         db.rollback()
+        print("ERRO AO ALTERAR ORÇAMENTO FIXO:", repr(erro))
 
         raise HTTPException(
-            500,
-            "Não foi possível alterar o orçamento."
+            status_code=500,
+            detail="Não foi possível alterar o orçamento."
         )
-
-
 # =====================================
 # LISTAR ORÇAMENTOS
 # =====================================
