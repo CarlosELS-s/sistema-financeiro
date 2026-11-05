@@ -2242,3 +2242,38 @@ thead th:nth-child(5) {
         font-size: 11px;
     }
 }
+.btn-visitante {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 13px;
+    border: 1px solid #3b82f6;
+    border-radius: 10px;
+    background: transparent;
+    color: #60a5fa;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.btn-visitante:hover {
+    background: #1e293b;
+}
+/* Aproximar os botões da tela de login */
+#btnLogin {
+    margin-bottom: 0 !important;
+}
+
+#mensagemLogin:empty {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+#mensagemLogin {
+    margin: 4px 0 !important;
+    padding: 0 !important;
+}
+
+#btnVisitante {
+    margin-top: 4px !important;
+}

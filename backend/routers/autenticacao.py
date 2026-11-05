@@ -1,7 +1,6 @@
 
 import os
 import secrets
-import smtplib
 import base64
 
 from google.oauth2.credentials import Credentials
@@ -19,7 +18,8 @@ from models import Usuario
 from auth import (
     gerar_hash_senha,
     verificar_senha,
-    criar_token
+    criar_token,
+    criar_token_visitante
 )
 
 
@@ -310,6 +310,7 @@ Equipe Financeiro
             detail="Não foi possível enviar o email."
         )
 
+
 def validar_codigo(
     usuario: Usuario,
     codigo: str,
@@ -388,7 +389,6 @@ def cadastrar_usuario(
             detail="Este email já está cadastrado."
         )
 
-    # Verifica também emails cadastrados em contas inativas.
     existente = db.query(Usuario).filter(
         Usuario.email == email
     ).first()
@@ -455,6 +455,24 @@ def login(
 
 
 # =====================================
+# ENTRAR COMO VISITANTE
+# =====================================
+
+@router.post("/visitante")
+def entrar_como_visitante():
+    token = criar_token_visitante()
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "usuario": {
+            "nome": "Visitante",
+            "visitante": True
+        }
+    }
+
+
+# =====================================
 # SOLICITAR RECUPERAÇÃO
 # =====================================
 
@@ -477,7 +495,6 @@ def recuperar_senha(
         Usuario.ativo == True
     ).with_for_update().first()
 
-    # Não revela se o email está cadastrado.
     if not usuario:
         return resposta
 
@@ -491,7 +508,6 @@ def recuperar_senha(
         usuario.codigo_recuperacao_solicitacoes or 0
     )
 
-    # Reinicia o contador após uma hora sem solicitações.
     if (
         ultima_solicitacao
         and agora - ultima_solicitacao >= timedelta(
@@ -500,7 +516,6 @@ def recuperar_senha(
     ):
         solicitacoes = 0
 
-    # Intervalo mínimo de 60 segundos.
     if ultima_solicitacao and agora - ultima_solicitacao < timedelta(
         seconds=INTERVALO_SOLICITACAO
     ):
@@ -516,7 +531,6 @@ def recuperar_senha(
             )
         )
 
-    # Máximo de cinco solicitações.
     if solicitacoes >= MAX_SOLICITACOES:
         raise HTTPException(
             status_code=429,
@@ -537,19 +551,15 @@ def recuperar_senha(
     )
 
     usuario.codigo_recuperacao_tentativas = 0
-
     usuario.codigo_recuperacao_solicitado_em = agora
     usuario.codigo_recuperacao_solicitacoes = solicitacoes + 1
 
-    # Salva antes do envio para registrar a solicitação
-    # mesmo se o serviço de email apresentar falha.
     db.commit()
 
     try:
         enviar_codigo_email(email, codigo)
 
     except Exception:
-        # Invalida o código caso o envio não tenha funcionado.
         usuario = db.query(Usuario).filter(
             Usuario.id == usuario.id
         ).first()
@@ -631,7 +641,6 @@ def redefinir_senha(
         dados.nova_senha
     )
 
-    # Invalida o código depois de utilizado.
     usuario.codigo_recuperacao_hash = None
     usuario.codigo_recuperacao_expira = None
     usuario.codigo_recuperacao_tentativas = 0

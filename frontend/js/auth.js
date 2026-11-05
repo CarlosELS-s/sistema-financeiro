@@ -18,7 +18,7 @@ function encerrarSessao() {
 
 
 // =====================================
-// LOGIN
+// LOGIN NORMAL
 // =====================================
 
 document.getElementById("formLogin")?.addEventListener(
@@ -36,7 +36,8 @@ document.getElementById("formLogin")?.addEventListener(
 
         botao.disabled = true;
         botao.textContent = "Entrando...";
-        mensagem.textContent = "";
+
+        if (mensagem) mensagem.textContent = "";
 
         try {
             const resposta = await fetch(`${API_URL}/auth/login`, {
@@ -56,12 +57,13 @@ document.getElementById("formLogin")?.addEventListener(
             }
 
             salvarSessao(resultado);
-
             window.location.href = "/dashboard";
 
         } catch (erro) {
-            mensagem.textContent = erro.message;
-            mensagem.className = "form-message error";
+            if (mensagem) {
+                mensagem.textContent = erro.message;
+                mensagem.className = "form-message error";
+            }
 
         } finally {
             botao.disabled = false;
@@ -359,3 +361,82 @@ document.getElementById("formNovaSenha")?.addEventListener(
         }
     }
 );
+
+
+// =====================================
+// ENTRAR COMO VISITANTE
+// =====================================
+
+async function entrarComoVisitante() {
+    const botao = document.getElementById("btnVisitante");
+    const mensagem = document.getElementById("mensagemLogin");
+
+    if (!botao) return;
+
+    botao.disabled = true;
+    botao.textContent = "Carregando demonstração...";
+
+    if (mensagem) {
+        mensagem.textContent = "";
+    }
+
+    try {
+        const resposta = await fetch(`${API_URL}/auth/visitante`, {
+            method: "POST"
+        });
+
+        const resultado = await resposta.json().catch(() => ({}));
+
+        if (!resposta.ok) {
+            throw new Error(
+                resultado.detail || "Não foi possível entrar como visitante."
+            );
+        }
+
+        if (
+            !resultado.access_token ||
+            !resultado.usuario ||
+            resultado.usuario.visitante !== true
+        ) {
+            throw new Error("Resposta inválida da API.");
+        }
+
+        salvarSessao(resultado);
+
+        window.location.replace("/dashboard");
+
+    } catch (erro) {
+        console.error("Erro ao entrar como visitante:", erro);
+
+        if (mensagem) {
+            mensagem.textContent = erro.message;
+            mensagem.className = "form-message error";
+        }
+
+        botao.disabled = false;
+        botao.textContent = "👁 Entrar como visitante";
+    }
+}
+
+
+// =====================================
+// REGISTRAR CLIQUE DO VISITANTE
+// =====================================
+
+document.addEventListener("DOMContentLoaded", () => {
+    const botaoVisitante = document.getElementById("btnVisitante");
+
+    if (!botaoVisitante) {
+        console.error("Botão visitante não encontrado!");
+        return;
+    }
+
+    console.log("Botão visitante encontrado!");
+
+    botaoVisitante.addEventListener("click", () => {
+        console.log("Clique no botão visitante detectado!");
+        entrarComoVisitante();
+    });
+});
+
+console.log("AUTH.JS CARREGADO!");

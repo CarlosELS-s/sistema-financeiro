@@ -1,4 +1,3 @@
-
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from calendar import monthrange
@@ -14,13 +13,140 @@ from schemas import (
     ContaFixaUpdate,
     ContaPagar,
 )
-from auth import get_usuario_atual
+from auth import (
+    get_usuario_atual,
+    get_contexto_atual,
+    ContextoVisitante,
+)
 
 
 router = APIRouter(
     prefix="/api/contas-fixas",
     tags=["Contas Fixas"]
 )
+
+
+# =====================================
+# DADOS FICTÍCIOS DO VISITANTE
+# =====================================
+
+def contas_fixas_demo():
+    hoje = date.today()
+
+    return [
+        {
+            "id": 9301,
+            "usuario_id": None,
+            "nome": "Energia elétrica",
+            "categoria": "Moradia",
+            "descricao": "Conta de energia da residência",
+            "valor_centavos": 18500,
+            "dia_vencimento": 1,
+            "valor_padrao": True,
+            "data_inicio": date(hoje.year, 1, 1),
+            "ativa": True,
+        },
+        {
+            "id": 9302,
+            "usuario_id": None,
+            "nome": "Internet",
+            "categoria": "Serviços",
+            "descricao": "Plano mensal de internet",
+            "valor_centavos": 9990,
+            "dia_vencimento": 1,
+            "valor_padrao": True,
+            "data_inicio": date(hoje.year, 1, 1),
+            "ativa": True,
+        },
+        {
+            "id": 9303,
+            "usuario_id": None,
+            "nome": "Água",
+            "categoria": "Moradia",
+            "descricao": "Conta mensal de água",
+            "valor_centavos": 8500,
+            "dia_vencimento": 1,
+            "valor_padrao": True,
+            "data_inicio": date(hoje.year, 1, 1),
+            "ativa": True,
+        },
+    ]
+
+
+def contas_mensais_demo(mes: str):
+    ano, numero_mes = validar_mes(mes)
+
+    hoje = date.today()
+    ultimo_dia = monthrange(ano, numero_mes)[1]
+
+    contas = [
+        {
+            "id": 9401,
+            "conta_fixa_id": 9301,
+            "nome": "Energia elétrica",
+            "categoria": "Moradia",
+            "descricao": "Conta de energia da residência",
+            "valor": 185.00,
+            "status": "pendente",
+            "dia": 10,
+        },
+        {
+            "id": 9402,
+            "conta_fixa_id": 9302,
+            "nome": "Internet",
+            "categoria": "Serviços",
+            "descricao": "Plano mensal de internet",
+            "valor": 99.90,
+            "status": "paga",
+            "dia": 5,
+        },
+        {
+            "id": 9403,
+            "conta_fixa_id": 9303,
+            "nome": "Água",
+            "categoria": "Moradia",
+            "descricao": "Conta mensal de água",
+            "valor": 85.00,
+            "status": "pendente",
+            "dia": 15,
+        },
+    ]
+
+    resultado = []
+
+    for conta in contas:
+        vencimento = date(
+            ano,
+            numero_mes,
+            min(conta["dia"], ultimo_dia)
+        )
+
+        paga = conta["status"] == "paga"
+
+        resultado.append({
+            "id": conta["id"],
+            "conta_fixa_id": conta["conta_fixa_id"],
+            "nome": conta["nome"],
+            "categoria": conta["categoria"],
+            "descricao": conta["descricao"],
+            "ano": ano,
+            "mes": numero_mes,
+            "vencimento": vencimento.isoformat(),
+            "valor_previsto": conta["valor"],
+            "valor_pago": conta["valor"] if paga else None,
+            "status": conta["status"],
+            "data_pagamento": (
+                date(ano, numero_mes, min(6, ultimo_dia)).isoformat()
+                if paga else None
+            ),
+            "atrasada": (
+                not paga
+                and (ano, numero_mes) < (hoje.year, hoje.month)
+            ),
+            "transacao_id": None,
+        })
+
+    return resultado
 
 
 # =====================================
@@ -161,8 +287,21 @@ def criar_conta_fixa(
 def listar_contas_fixas(
     incluir_inativas: bool = False,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_usuario_atual)
+    contexto=Depends(get_contexto_atual)
 ):
+    if isinstance(contexto, ContextoVisitante):
+        contas = contas_fixas_demo()
+
+        if not incluir_inativas:
+            contas = [
+                conta for conta in contas
+                if conta["ativa"]
+            ]
+
+        return contas
+
+    usuario = contexto
+
     query = db.query(ContaFixa).filter(
         ContaFixa.usuario_id == usuario.id
     )
@@ -223,12 +362,19 @@ def editar_conta_fixa(
 def listar_contas_mensais(
     mes: str | None = None,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_usuario_atual)
+    contexto=Depends(get_contexto_atual)
 ):
     if mes is None:
         mes = date.today().strftime("%Y-%m")
 
     ano, numero_mes = validar_mes(mes)
+
+    # Visitante recebe somente dados fictícios.
+    # Não consulta nem grava informações no banco.
+    if isinstance(contexto, ContextoVisitante):
+        return contas_mensais_demo(mes)
+
+    usuario = contexto
 
     ultimo_dia_mes = date(
         ano,
@@ -482,8 +628,6 @@ def excluir_conta_fixa(
             ContaMensal.conta_fixa_id == conta.id
         ).all()
 
-        # Impede apagar transações que já foram geradas
-        # por pagamentos de contas fixas.
         if any(m.transacao_id is not None for m in mensais):
             raise HTTPException(
                 status_code=409,

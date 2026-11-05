@@ -1,5 +1,22 @@
 const API_URL = "/api";
 
+// ======================================
+// MODO VISITANTE
+// ======================================
+
+function ehVisitante() {
+    try {
+        const usuario = JSON.parse(
+            localStorage.getItem("usuario") || "{}"
+        );
+
+        return usuario.visitante === true;
+    } catch {
+        return false;
+    }
+}
+
+const MODO_VISITANTE = ehVisitante();
 let cartoesDisponiveisOrcamento = [];
 
 // ======================================
@@ -145,7 +162,31 @@ document.addEventListener("DOMContentLoaded", () => {
         redirecionarLogin();
         return;
     }
+        if (MODO_VISITANTE) {
+        const aviso = document.createElement("div");
 
+        aviso.id = "avisoVisitante";
+        aviso.innerHTML = `
+            <strong>👁 Modo visitante — demonstração</strong>
+            <span>Você está visualizando dados fictícios. As alterações estão desativadas.</span>
+        `;
+
+        aviso.style.cssText = `
+            background: #1e3a5f;
+            color: #dbeafe;
+            border: 1px solid #3b82f6;
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin: 15px 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        `;
+
+        document.querySelector("main")?.prepend(aviso);
+
+        bloquearEdicaoVisitante();
+    }
     const usuarioSalvo = localStorage.getItem("usuario");
 
     if (usuarioSalvo) {
@@ -1253,19 +1294,27 @@ async function carregarOrcamentos() {
                         ` : ""}
                     </div>
 
-                    <div class="orcamento-acoes">
-                        <button type="button"
-                            class="btn-fixar-orcamento"
-                            title="${fixado ? "Desafixar orçamento" : "Fixar orçamento"}">
-                            ${fixado ? "📌 Desafixar" : "📌 Fixar"}
-                        </button>
+                    ${!MODO_VISITANTE ? `
+                        <div class="orcamento-acoes">
+                            <button type="button"
+                                class="btn-fixar-orcamento"
+                                title="${fixado ? "Desafixar orçamento" : "Fixar orçamento"}">
+                                ${fixado ? "📌 Desafixar" : "📌 Fixar"}
+                            </button>
 
-                        <button type="button" class="btn-editar-orcamento"
-                            title="Editar orçamento">Editar</button>
+                            <button type="button"
+                                class="btn-editar-orcamento"
+                                title="Editar orçamento">
+                                Editar
+                            </button>
 
-                        <button type="button" class="btn-excluir-orcamento"
-                            title="Excluir orçamento">✕</button>
-                    </div>
+                            <button type="button"
+                                class="btn-excluir-orcamento"
+                                title="Excluir orçamento">
+                                ✕
+                            </button>
+                        </div>
+                    ` : ""}
                 </div>
 
                 <div class="orcamento-valores">
@@ -1297,20 +1346,22 @@ async function carregarOrcamentos() {
                 </div>
             `;
 
-            card.querySelector(".btn-fixar-orcamento").addEventListener(
-                "click",
-                () => alternarOrcamentoFixo(orcamento.id)
-            );
+            if (!MODO_VISITANTE) {
+                card.querySelector(".btn-fixar-orcamento")?.addEventListener(
+                    "click",
+                    () => alternarOrcamentoFixo(orcamento.id)
+                );
 
-            card.querySelector(".btn-editar-orcamento").addEventListener(
-                "click",
-                () => editarOrcamento(orcamento)
-            );
+                card.querySelector(".btn-editar-orcamento")?.addEventListener(
+                    "click",
+                    () => editarOrcamento(orcamento)
+                );
 
-            card.querySelector(".btn-excluir-orcamento").addEventListener(
-                "click",
-                () => excluirOrcamento(orcamento.id)
-            );
+                card.querySelector(".btn-excluir-orcamento")?.addEventListener(
+                    "click",
+                    () => excluirOrcamento(orcamento.id)
+                );
+            }
 
             lista.appendChild(card);
         });
@@ -1324,148 +1375,45 @@ async function carregarOrcamentos() {
     }
 }
 // ======================================
-// FIXAR E DESAFIXAR ORÇAMENTO
+// BLOQUEAR EDIÇÃO DO VISITANTE
 // ======================================
 
-async function alternarOrcamentoFixo(id) {
-    try {
-        await requisicao(`${API_URL}/orcamentos/${id}/fixar`, {
-            method: "POST"
-        });
+function bloquearEdicaoVisitante() {
+    if (!MODO_VISITANTE) return;
 
-        await carregarOrcamentos();
+    // Esconde somente o formulário de cadastro de movimentações.
+    document.getElementById("formTransacao")?.setAttribute("hidden", "");
 
-    } catch (erro) {
-        console.error("Erro ao alterar orçamento fixo:", erro);
-        alert(erro.message);
-    }
-}
+    // Esconde somente o formulário de cadastro de orçamentos.
+    document.getElementById("formOrcamento")?.setAttribute("hidden", "");
 
-// ======================================
-// SALVAR ORÇAMENTO
-// ======================================
+    // Esconde controles de importação e exportação.
+    [
+        "arquivoExcel",
+        "btnExportar",
+        "btnImportar"
+    ].forEach(id => {
+        const elemento = document.getElementById(id);
 
-async function salvarOrcamento(evento) {
-    evento.preventDefault();
-
-    const botao = document.getElementById("btnSalvarOrcamento");
-    const mensagem = document.getElementById("mensagemOrcamento");
-
-    const categoria = document.getElementById("orcamentoCategoria")?.value;
-    const valor = Number(document.getElementById("orcamentoValor")?.value);
-    const mes = document.getElementById("mesFiltro")?.value;
-
-    if (!categoria || !mes || !Number.isFinite(valor) || valor <= 0) {
-        mensagem.textContent = "Preencha a categoria e um limite válido.";
-        mensagem.className = "form-message error";
-        return;
-    }
-
-    let cartoesIds = null;
-
-    if (categoria === "Parcelados") {
-        cartoesIds = obterCartoesSelecionadosOrcamento();
-
-        if (Array.isArray(cartoesIds) && cartoesIds.length === 0) {
-            mensagem.textContent =
-                "Selecione todos os cartões ou pelo menos um cartão.";
-            mensagem.className = "form-message error";
-            return;
-        }
-    }
-
-    const [ano, numeroMes] = mes.split("-").map(Number);
-
-    botao.disabled = true;
-    botao.textContent = "Salvando...";
-
-    try {
-        await requisicao(`${API_URL}/orcamentos`, {
-            method: "POST",
-            body: JSON.stringify({
-                categoria,
-                ano,
-                mes: numeroMes,
-                valor_limite: valor,
-                cartoes_ids: categoria === "Parcelados" ? cartoesIds : null
-            })
-        });
-
-        mensagem.textContent = "Orçamento salvo com sucesso!";
-        mensagem.className = "form-message success";
-
-        document.getElementById("formOrcamento").reset();
-
-        carregarCategoriasOrcamento();
-        renderizarCartoesOrcamento(null);
-        atualizarVisibilidadeCartoesOrcamento();
-
-        await carregarOrcamentos();
-    } catch (erro) {
-        mensagem.textContent = erro.message;
-        mensagem.className = "form-message error";
-    } finally {
-        botao.disabled = false;
-        botao.textContent = "Salvar orçamento";
-    }
-}
-
-// ======================================
-// EDITAR ORÇAMENTO
-// ======================================
-
-function editarOrcamento(orcamento) {
-    const select = document.getElementById("orcamentoCategoria");
-    const valor = document.getElementById("orcamentoValor");
-
-    select.value = orcamento.categoria;
-    valor.value = Number(orcamento.limite).toFixed(2);
-
-    atualizarVisibilidadeCartoesOrcamento();
-
-    if (orcamento.categoria === "Parcelados") {
-        let ids = orcamento.cartoes_ids;
-
-        if (typeof ids === "string") {
-            ids = ids.trim() ? ids.split(",").map(Number) : null;
+        if (elemento) {
+            elemento.hidden = true;
         }
 
-        if (!Array.isArray(ids)) ids = null;
-
-        renderizarCartoesOrcamento(ids);
-        atualizarTextoCartoesOrcamento();
-    }
-
-    const conteudo = document.getElementById("conteudoOrcamentos");
-    const botao = document.getElementById("btnExpandirOrcamentos");
-
-    if (conteudo?.hidden) botao?.click();
-
-    document.getElementById("orcamentos")?.scrollIntoView({
-        behavior: "smooth"
+        document.querySelectorAll(`label[for="${id}"]`).forEach(label => {
+            label.hidden = true;
+        });
     });
 
-    valor.focus();
+    // Esconde botões específicos de criação, sem esconder
+    // navegação, filtros ou o botão de sair.
+    [
+        "btnSalvar",
+        "btnSalvarOrcamento"
+    ].forEach(id => {
+        const elemento = document.getElementById(id);
 
-    const mensagem = document.getElementById("mensagemOrcamento");
-    mensagem.textContent = "Altere o limite e clique em Salvar orçamento.";
-    mensagem.className = "form-message";
-}
-
-// ======================================
-// EXCLUIR ORÇAMENTO
-// ======================================
-
-async function excluirOrcamento(id) {
-    if (!confirm("Deseja realmente excluir este orçamento?")) return;
-
-    try {
-        await requisicao(`${API_URL}/orcamentos/${id}`, {
-            method: "DELETE"
-        });
-
-        await carregarOrcamentos();
-    } catch (erro) {
-        alert(erro.message);
-    }
+        if (elemento) {
+            elemento.hidden = true;
+        }
+    });
 }

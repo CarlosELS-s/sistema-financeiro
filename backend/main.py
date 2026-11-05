@@ -16,6 +16,7 @@ from models import (
     CartaoCredito,
     FaturaCartao,
     CompraCartao,
+    Orcamento,
 )
 
 # Importar routers
@@ -44,6 +45,14 @@ app = FastAPI(
 
 
 # =====================================
+# CONFIGURAÇÃO DO FRONTEND
+# =====================================
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+FRONTEND_DIR = BASE_DIR / "frontend"
+
+
+# =====================================
 # ROTAS DA API
 # =====================================
 
@@ -54,13 +63,8 @@ app.include_router(autenticacao_router)
 
 
 # =====================================
-# CONFIGURAÇÃO DO FRONTEND
+# ARQUIVOS ESTÁTICOS
 # =====================================
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-FRONTEND_DIR = BASE_DIR / "frontend"
-
-
 
 app.mount(
     "/css",
@@ -76,6 +80,30 @@ app.mount(
 
 
 # =====================================
+# DIAGNÓSTICO DO AUTH.JS
+# =====================================
+
+@app.get("/teste-arquivo-js")
+def teste_arquivo_js():
+    arquivo = FRONTEND_DIR / "js" / "auth.js"
+
+    return {
+        "base_dir": str(BASE_DIR),
+        "frontend_dir": str(FRONTEND_DIR),
+        "caminho_auth_js": str(arquivo.resolve()),
+        "existe": arquivo.exists(),
+        "tamanho": arquivo.stat().st_size if arquivo.exists() else 0,
+        "possui_funcao_visitante": (
+            "async function entrarComoVisitante" in arquivo.read_text(
+                encoding="utf-8"
+            )
+            if arquivo.exists()
+            else False
+        )
+    }
+
+
+# =====================================
 # PÁGINAS
 # =====================================
 
@@ -83,9 +111,11 @@ app.mount(
 def pagina_recuperar_senha():
     return FileResponse(FRONTEND_DIR / "recuperar-senha.html")
 
+
 @app.get("/favicon1.png", include_in_schema=False)
 def favicon():
     return FileResponse(FRONTEND_DIR / "favicon1.png")
+
 
 @app.get("/login", include_in_schema=False)
 def pagina_login():
@@ -127,5 +157,11 @@ def verificar_api():
         "status": "online",
         "mensagem": "Sistema Financeiro funcionando!"
     }
-#python -m uvicorn main:app --reload
-# AIDAODALJDDHAJ
+
+
+# =====================================
+# EXECUÇÃO
+# =====================================
+
+# Para executar localmente:
+# python -m uvicorn main:app --reload

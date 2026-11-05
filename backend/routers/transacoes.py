@@ -1,3 +1,4 @@
+
 import calendar
 import re
 import uuid
@@ -32,7 +33,18 @@ from models import (
     ContaMensal,
 )
 from schemas import TransacaoCreate, TransacaoResponse
-from auth import get_usuario_atual
+from auth import (
+    get_usuario_atual,
+    get_contexto_atual,
+    ContextoVisitante,
+)
+
+from demo_data import (
+    dados_dashboard,
+    dados_transacoes,
+    dados_movimentos,
+    dados_orcamentos,
+)
 
 
 router = APIRouter(
@@ -202,7 +214,6 @@ def registrar_compra_parcelada(
     valor_base = valor_centavos // quantidade_parcelas
     resto = valor_centavos % quantidade_parcelas
 
-    # Um identificador único para todas as parcelas desta compra.
     grupo_compra = str(uuid.uuid4())
 
     compras = []
@@ -251,6 +262,7 @@ def registrar_compra_parcelada(
     db.flush()
 
     return compras
+
 
 def subquery_pagamentos_usuario(usuario_id: int, db: Session):
     return db.query(
@@ -390,10 +402,19 @@ def listar_transacoes(
     tipo: str | None = None,
     mes: str | None = None,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_usuario_atual)
+    contexto=Depends(get_contexto_atual)
 ):
+    if isinstance(contexto, ContextoVisitante):
+        if tipo and tipo not in ["receita", "despesa"]:
+            raise HTTPException(400, "Tipo inválido.")
+
+        return dados_transacoes(
+            mes=mes,
+            tipo=tipo
+        )
+
     query = db.query(Transacao).filter(
-        Transacao.usuario_id == usuario.id
+        Transacao.usuario_id == contexto.id
     )
 
     if tipo:
@@ -428,10 +449,16 @@ def listar_movimentos(
     tipo: str | None = None,
     mes: str | None = None,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_usuario_atual)
+    contexto=Depends(get_contexto_atual)
 ):
     if tipo and tipo not in ["receita", "despesa"]:
         raise HTTPException(400, "Tipo inválido.")
+
+    if isinstance(contexto, ContextoVisitante):
+        return dados_movimentos(
+            mes=mes,
+            tipo=tipo
+        )
 
     if mes:
         ano, numero_mes = validar_mes(mes)
@@ -440,7 +467,7 @@ def listar_movimentos(
         ano, numero_mes = hoje.year, hoje.month
 
     query = db.query(Transacao).filter(
-        Transacao.usuario_id == usuario.id
+        Transacao.usuario_id == contexto.id
     )
 
     if tipo:
@@ -453,7 +480,10 @@ def listar_movimentos(
             Transacao.data < fim
         )
 
-    pagamentos_faturas = subquery_pagamentos_usuario(usuario.id, db)
+    pagamentos_faturas = subquery_pagamentos_usuario(
+        contexto.id,
+        db
+    )
 
     transacoes = query.filter(
         ~Transacao.id.in_(pagamentos_faturas)
@@ -483,7 +513,7 @@ def listar_movimentos(
         CartaoCredito,
         FaturaCartao.cartao_id == CartaoCredito.id
     ).filter(
-        CartaoCredito.usuario_id == usuario.id,
+        CartaoCredito.usuario_id == contexto.id,
         FaturaCartao.ano == ano,
         FaturaCartao.mes == numero_mes
     ).all()
@@ -610,16 +640,20 @@ def excluir_transacao(
 def dashboard(
     mes: str | None = None,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_usuario_atual)
+    contexto=Depends(get_contexto_atual)
 ):
     if mes is None:
         mes = date.today().strftime("%Y-%m")
 
     ano, numero_mes = validar_mes(mes)
+
+    if isinstance(contexto, ContextoVisitante):
+        return dados_dashboard(mes)
+
     inicio, fim = periodo_mes(ano, numero_mes)
 
     pagamentos_faturas = subquery_pagamentos_usuario(
-        usuario.id,
+        contexto.id,
         db
     )
 
@@ -629,7 +663,7 @@ def dashboard(
                 func.sum(Transacao.valor_centavos), 0
             )
         ).filter(
-            Transacao.usuario_id == usuario.id,
+            Transacao.usuario_id == contexto.id,
             Transacao.tipo == tipo,
             ~Transacao.id.in_(pagamentos_faturas)
         )
@@ -664,7 +698,7 @@ def dashboard(
             CartaoCredito,
             FaturaCartao.cartao_id == CartaoCredito.id
         ).filter(
-            CartaoCredito.usuario_id == usuario.id,
+            CartaoCredito.usuario_id == contexto.id,
             FaturaCartao.ano == ano,
             FaturaCartao.mes == numero_mes
         ).scalar() or 0
@@ -682,7 +716,7 @@ def dashboard(
             CartaoCredito,
             FaturaCartao.cartao_id == CartaoCredito.id
         ).filter(
-            CartaoCredito.usuario_id == usuario.id
+            CartaoCredito.usuario_id == contexto.id
         ).scalar() or 0
     )
 
@@ -693,7 +727,7 @@ def dashboard(
         Transacao.categoria,
         func.sum(Transacao.valor_centavos)
     ).filter(
-        Transacao.usuario_id == usuario.id,
+        Transacao.usuario_id == contexto.id,
         Transacao.tipo == "despesa",
         Transacao.data >= inicio,
         Transacao.data < fim,
@@ -717,7 +751,7 @@ def dashboard(
         CartaoCredito,
         FaturaCartao.cartao_id == CartaoCredito.id
     ).filter(
-        CartaoCredito.usuario_id == usuario.id,
+        CartaoCredito.usuario_id == contexto.id,
         FaturaCartao.ano == ano,
         FaturaCartao.mes == numero_mes
     ).group_by(
@@ -733,7 +767,7 @@ def dashboard(
         )
 
     ultimas = db.query(Transacao).filter(
-        Transacao.usuario_id == usuario.id,
+        Transacao.usuario_id == contexto.id,
         ~Transacao.id.in_(pagamentos_faturas)
     ).order_by(
         Transacao.data.desc(),
@@ -763,7 +797,7 @@ def dashboard(
         CartaoCredito,
         FaturaCartao.cartao_id == CartaoCredito.id
     ).filter(
-        CartaoCredito.usuario_id == usuario.id
+        CartaoCredito.usuario_id == contexto.id
     ).order_by(
         CompraCartao.data.desc(),
         CompraCartao.id.desc()
@@ -1200,7 +1234,6 @@ def criar_orcamentos_fixos_do_mes(
     ano: int,
     mes: int
 ):
-    # Não duplica uma categoria que já possui orçamento neste mês.
     existentes = db.query(Orcamento).filter(
         Orcamento.usuario_id == usuario_id,
         Orcamento.ano == ano,
@@ -1211,7 +1244,6 @@ def criar_orcamentos_fixos_do_mes(
         o.categoria for o in existentes
     }
 
-    # Busca orçamentos anteriores, do mais recente para o mais antigo.
     anteriores = db.query(Orcamento).filter(
         Orcamento.usuario_id == usuario_id,
         (
@@ -1234,7 +1266,6 @@ def criar_orcamentos_fixos_do_mes(
             ultimo_por_categoria[anterior.categoria] = anterior
 
     for categoria, anterior in ultimo_por_categoria.items():
-
         if categoria in categorias_existentes:
             continue
 
@@ -1255,6 +1286,7 @@ def criar_orcamentos_fixos_do_mes(
         )
 
         db.add(novo)
+
 
 @router.post("/orcamentos")
 def salvar_orcamento(
@@ -1359,6 +1391,7 @@ def salvar_orcamento(
 # =====================================
 # FIXAR / DESAFIXAR ORÇAMENTO
 # =====================================
+
 @router.post("/orcamentos/{orcamento_id}/fixar")
 def alternar_orcamento_fixo(
     orcamento_id: int,
@@ -1383,7 +1416,6 @@ def alternar_orcamento_fixo(
 
             original.fixado = False
 
-            # Remove somente as cópias automáticas dessa origem.
             db.query(Orcamento).filter(
                 Orcamento.usuario_id == usuario.id,
                 Orcamento.origem_fixa_id == origem_id
@@ -1397,16 +1429,15 @@ def alternar_orcamento_fixo(
                 "fixado": False
             }
 
-        else:
-            orcamento.fixado = True
-            db.commit()
-            db.refresh(orcamento)
+        orcamento.fixado = True
+        db.commit()
+        db.refresh(orcamento)
 
-            return {
-                "mensagem": "Orçamento fixado para os próximos meses!",
-                "id": orcamento.id,
-                "fixado": True
-            }
+        return {
+            "mensagem": "Orçamento fixado para os próximos meses!",
+            "id": orcamento.id,
+            "fixado": True
+        }
 
     except Exception as erro:
         db.rollback()
@@ -1416,6 +1447,8 @@ def alternar_orcamento_fixo(
             status_code=500,
             detail="Não foi possível alterar o orçamento."
         )
+
+
 # =====================================
 # LISTAR ORÇAMENTOS
 # =====================================
@@ -1424,19 +1457,24 @@ def alternar_orcamento_fixo(
 def listar_orcamentos(
     mes: str | None = None,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_usuario_atual)
+    contexto=Depends(get_contexto_atual)
 ):
     if mes is None:
         mes = date.today().strftime("%Y-%m")
 
     ano, numero_mes = validar_mes(mes)
+
+    # Visitante recebe somente dados fictícios.
+    # Não cria nem altera registros no banco.
+    if isinstance(contexto, ContextoVisitante):
+        return dados_orcamentos(mes)
+
     inicio, fim = periodo_mes(ano, numero_mes)
 
     try:
-        # Cria os orçamentos recorrentes que ainda não existem.
         criar_orcamentos_fixos_do_mes(
             db,
-            usuario.id,
+            contexto.id,
             ano,
             numero_mes
         )
@@ -1451,7 +1489,7 @@ def listar_orcamentos(
         )
 
     orcamentos = db.query(Orcamento).filter(
-        Orcamento.usuario_id == usuario.id,
+        Orcamento.usuario_id == contexto.id,
         Orcamento.ano == ano,
         Orcamento.mes == numero_mes
     ).order_by(
@@ -1459,7 +1497,7 @@ def listar_orcamentos(
     ).all()
 
     pagamentos_faturas = subquery_pagamentos_usuario(
-        usuario.id,
+        contexto.id,
         db
     )
 
@@ -1469,7 +1507,7 @@ def listar_orcamentos(
             func.sum(Transacao.valor_centavos), 0
         )
     ).filter(
-        Transacao.usuario_id == usuario.id,
+        Transacao.usuario_id == contexto.id,
         Transacao.tipo == "despesa",
         Transacao.data >= inicio,
         Transacao.data < fim,
@@ -1493,7 +1531,7 @@ def listar_orcamentos(
         CartaoCredito,
         FaturaCartao.cartao_id == CartaoCredito.id
     ).filter(
-        CartaoCredito.usuario_id == usuario.id,
+        CartaoCredito.usuario_id == contexto.id,
         FaturaCartao.ano == ano,
         FaturaCartao.mes == numero_mes
     ).all()

@@ -22,7 +22,11 @@ from schemas import (
     CompraCartaoCreate,
     FaturaCartaoPagar,
 )
-from auth import get_usuario_atual
+from auth import (
+    get_usuario_atual,
+    get_contexto_atual,
+    ContextoVisitante,
+)
 
 
 router = APIRouter(
@@ -102,6 +106,7 @@ def obter_ou_criar_fatura(
     db: Session,
     cartao: CartaoCredito,
     ano: int,
+
     mes: int
 ):
     fatura = db.query(FaturaCartao).filter(
@@ -298,7 +303,6 @@ def criar_cartao(
 
     return cartao
 
-
 # =====================================
 # LISTAR CARTÕES
 # =====================================
@@ -306,8 +310,35 @@ def criar_cartao(
 @router.get("")
 def listar_cartoes(
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_usuario_atual)
+    contexto=Depends(get_contexto_atual)
 ):
+    # MODO VISITANTE: dados fictícios, sem consultar o banco.
+    if isinstance(contexto, ContextoVisitante):
+        return [
+            {
+                "id": 9501,
+                "nome": "Cartão principal",
+                "banco": "Banco Demonstração",
+                "limite_centavos": 500000,
+                "utilizado_centavos": 127500,
+                "disponivel_centavos": 372500,
+                "dia_fechamento": 20,
+                "dia_vencimento": 5
+            },
+            {
+                "id": 9502,
+                "nome": "Cartão secundário",
+                "banco": "Banco Demonstração",
+                "limite_centavos": 300000,
+                "utilizado_centavos": 45000,
+                "disponivel_centavos": 255000,
+                "dia_fechamento": 15,
+                "dia_vencimento": 10
+            }
+        ]
+
+    usuario = contexto
+
     cartoes = db.query(CartaoCredito).filter(
         CartaoCredito.usuario_id == usuario.id,
         CartaoCredito.ativo == True
@@ -318,10 +349,7 @@ def listar_cartoes(
     resultado = []
 
     for cartao in cartoes:
-        utilizado = total_utilizado(
-            db,
-            cartao.id
-        )
+        utilizado = total_utilizado(db, cartao.id)
 
         resultado.append({
             "id": cartao.id,
@@ -338,8 +366,6 @@ def listar_cartoes(
         })
 
     return resultado
-
-
 # =====================================
 # EDITAR CARTÃO
 # =====================================
@@ -490,13 +516,165 @@ def registrar_compra(
 # =====================================
 # LISTAR FATURAS
 # =====================================
+# =====================================
+# LISTAR FATURAS
+# =====================================
 
 @router.get("/{cartao_id}/faturas")
 def listar_faturas(
     cartao_id: int,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_usuario_atual)
+    contexto=Depends(get_contexto_atual)
 ):
+    # MODO VISITANTE: faturas e compras fictícias.
+    if isinstance(contexto, ContextoVisitante):
+        if cartao_id not in [9501, 9502]:
+            raise HTTPException(
+                status_code=404,
+                detail="Cartão não encontrado."
+            )
+
+        hoje = date.today()
+        ano = hoje.year
+        mes = hoje.month
+
+        if cartao_id == 9501:
+            faturas = [
+                {
+                    "id": 9601,
+                    "cartao_id": 9501,
+                    "ano": ano,
+                    "mes": mes,
+                    "vencimento": data_segura(
+                        ano + (1 if mes == 12 else 0),
+                        1 if mes == 12 else mes + 1,
+                        5
+                    ).isoformat(),
+                    "status": "aberta",
+                    "total_centavos": 127500,
+                    "transacao_id": None,
+                    "data_pagamento": None,
+                    "compras": [
+                        {
+                            "id": 9701,
+                            "fatura_id": 9601,
+                            "descricao": "Supermercado (1/1)",
+                            "categoria": "Alimentação",
+                            "valor_centavos": 85000,
+                            "data": hoje.isoformat(),
+                            "grupo_compra": "demo-compra-1"
+                        },
+                        {
+                            "id": 9702,
+                            "fatura_id": 9601,
+                            "descricao": "Assinatura (1/1)",
+                            "categoria": "Serviços",
+                            "valor_centavos": 42500,
+                            "data": hoje.isoformat(),
+                            "grupo_compra": "demo-compra-2"
+                        }
+                    ]
+                }
+            ]
+
+            compras_agrupadas = [
+                {
+                    "grupo_compra": "demo-compra-1",
+                    "identificador": "demo-compra-1",
+                    "descricao": "Supermercado",
+                    "categoria": "Alimentação",
+                    "valor_parcela_centavos": 85000,
+                    "valor_total_centavos": 85000,
+                    "quantidade_parcelas": 1,
+                    "parcelas_registradas": 1,
+                    "parcelas": [
+                        {
+                            "id": 9701,
+                            "fatura_id": 9601,
+                            "valor_centavos": 85000,
+                            "data": hoje.isoformat()
+                        }
+                    ]
+                },
+                {
+                    "grupo_compra": "demo-compra-2",
+                    "identificador": "demo-compra-2",
+                    "descricao": "Assinatura",
+                    "categoria": "Serviços",
+                    "valor_parcela_centavos": 42500,
+                    "valor_total_centavos": 42500,
+                    "quantidade_parcelas": 1,
+                    "parcelas_registradas": 1,
+                    "parcelas": [
+                        {
+                            "id": 9702,
+                            "fatura_id": 9601,
+                            "valor_centavos": 42500,
+                            "data": hoje.isoformat()
+                        }
+                    ]
+                }
+            ]
+
+        else:
+            faturas = [
+                {
+                    "id": 9602,
+                    "cartao_id": 9502,
+                    "ano": ano,
+                    "mes": mes,
+                    "vencimento": data_segura(
+                        ano + (1 if mes == 12 else 0),
+                        1 if mes == 12 else mes + 1,
+                        10
+                    ).isoformat(),
+                    "status": "aberta",
+                    "total_centavos": 45000,
+                    "transacao_id": None,
+                    "data_pagamento": None,
+                    "compras": [
+                        {
+                            "id": 9703,
+                            "fatura_id": 9602,
+                            "descricao": "Compra de exemplo (1/1)",
+                            "categoria": "Outros",
+                            "valor_centavos": 45000,
+                            "data": hoje.isoformat(),
+                            "grupo_compra": "demo-compra-3"
+                        }
+                    ]
+                }
+            ]
+
+            compras_agrupadas = [
+                {
+                    "grupo_compra": "demo-compra-3",
+                    "identificador": "demo-compra-3",
+                    "descricao": "Compra de exemplo",
+                    "categoria": "Outros",
+                    "valor_parcela_centavos": 45000,
+                    "valor_total_centavos": 45000,
+                    "quantidade_parcelas": 1,
+                    "parcelas_registradas": 1,
+                    "parcelas": [
+                        {
+                            "id": 9703,
+                            "fatura_id": 9602,
+                            "valor_centavos": 45000,
+                            "data": hoje.isoformat()
+                        }
+                    ]
+                }
+            ]
+
+        return {
+            "faturas": faturas,
+            "compras_agrupadas": compras_agrupadas
+        }
+
+    # MODO USUÁRIO: dados reais do banco.
+    usuario = contexto
+
     cartao = buscar_cartao_usuario(
         db,
         cartao_id,
@@ -541,7 +719,6 @@ def listar_faturas(
             }
 
         grupo = grupos[chave]
-
         grupo["valor_total_centavos"] += compra.valor_centavos
         grupo["quantidade_parcelas"] += 1
 
@@ -553,31 +730,20 @@ def listar_faturas(
         })
 
     compras_agrupadas = []
-    print("\n========== DIAGNÓSTICO DAS COMPRAS ==========")
-
-    for compra in todas_compras:
-        print({
-            "id": compra.id,
-            "descricao": compra.descricao,
-            "valor_centavos": compra.valor_centavos,
-            "grupo_compra": compra.grupo_compra,
-            "data": str(compra.data)
-        })
-
-    print("=============================================\n")
 
     for chave, grupo in grupos.items():
         descricao = grupo["descricao"] or "Compra"
 
         import re
-        resultado = re.search(
+
+        resultado_regex = re.search(
             r"\s*\((\d+)/(\d+)\)$",
             descricao
         )
 
-        if resultado:
-            descricao = descricao[:resultado.start()].strip()
-            quantidade_total = int(resultado.group(2))
+        if resultado_regex:
+            descricao = descricao[:resultado_regex.start()].strip()
+            quantidade_total = int(resultado_regex.group(2))
         else:
             quantidade_total = grupo["quantidade_parcelas"]
 
