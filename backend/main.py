@@ -24,7 +24,7 @@ from routers.transacoes import router as transacoes_router
 from routers.contas_fixas import router as contas_fixas_router
 from routers.cartoes import router as cartoes_router
 from routers.autenticacao import router as autenticacao_router
-
+####
 
 # =====================================
 # CRIAR TABELAS DO BANCO
