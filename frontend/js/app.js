@@ -277,6 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const botao = document.getElementById("btnSalvarOrcamento");
             const mensagem = document.getElementById("mensagemOrcamento");
 
+            
             if (categoria) categoria.disabled = false;
             if (botao) botao.textContent = "Salvar orçamento";
             if (mensagem) mensagem.textContent = "";
@@ -290,6 +291,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("orcamentoCategoria")?.addEventListener(
         "change",
         atualizarVisibilidadeCartoesOrcamento
+    );
+    document.getElementById("formTransacao")?.addEventListener(
+    "submit",
+    salvarTransacao
     );
 
     document.getElementById("arquivoExcel")?.addEventListener(
