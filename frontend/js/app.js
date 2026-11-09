@@ -256,11 +256,6 @@ document.addEventListener("DOMContentLoaded", () => {
         atualizarCamposPagamento();
     });
 
-    // Apenas um evento para salvar orçamento.
-    document.getElementById("formOrcamento")?.addEventListener(
-        "submit",
-        salvarOrcamento
-    );
 
     document.getElementById("formaPagamento")?.addEventListener(
         "change",

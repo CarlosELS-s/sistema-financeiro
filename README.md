@@ -5,59 +5,43 @@
 
 O projeto foi desenvolvido com Python e FastAPI no backend, utilizando HTML, CSS e JavaScript no frontend.
 
+🌐 **Acesse o sistema:** [Clique aqui para acessar](https://sistema-financeiro-tj76.onrender.com/)
+
 ---
 
 # 📸 Demonstração do sistema
 
 ## 1. Tela de login
 
-A tela de login permite que os usuários acessem suas contas utilizando e-mail e senha. Também disponibiliza opções de cadastro, recuperação de senha e acesso como visitante.
-
-![Tela de login](docs/imagens/tela%20de%20login.png)
+![Tela de login](docs/images/tela-de-login.png)
 
 ## 2. Modo visitante
 
-O modo visitante permite conhecer o sistema sem precisar criar uma conta. Para isso, a aplicação utiliza dados fictícios de demonstração, separados dos dados dos usuários reais.
-
-![Modo visitante](docs/imagens/visitante.png)
+![Modo visitante](docs/images/visitante.png)
 
 ## 3. Dashboard principal
 
-O dashboard apresenta um resumo da situação financeira, permitindo acompanhar receitas, despesas, saldo e movimentações recentes.
-
-![Dashboard principal](docs/imagens/tela%20principal.png)
+![Dashboard](docs/images/tela-principal.png)
 
 ## 4. Cadastro de movimentações
 
-O sistema permite registrar receitas e despesas, informando descrição, categoria, valor e data da movimentação.
-
-![Cadastro de movimentações](docs/imagens/cadastro%20de%20movimentação.png)
+![Cadastro de movimentações](docs/images/cadastro-de-movimentacao.png)
 
 ## 5. Cartões de crédito
 
-O módulo de cartões permite organizar compras realizadas no crédito, acompanhar faturas e controlar compras parceladas.
-
-![Cartões de crédito](docs/imagens/cartões%20de%20crédito.png)
+![Cartões de crédito](docs/images/cartoes-de-credito.png)
 
 ## 6. Contas mensais
 
-A área de contas mensais permite organizar compromissos financeiros recorrentes e acompanhar despesas que fazem parte da rotina.
-
-![Contas mensais](docs/imagens/contas%20mensais.png)
+![Contas mensais](docs/images/contas-mensais.png)
 
 ## 7. Orçamentos
 
-O módulo de orçamentos permite estabelecer limites de gastos por categoria e acompanhar quanto já foi utilizado em determinado mês.
+![Orçamentos](docs/images/orcamento.png)
 
-![Orçamentos](docs/imagens/orçamento.png)
+## 8. Recurso adicional
 
-## 8. Recursos adicionais
-
-Captura de tela de uma funcionalidade adicional do sistema.
-
-![Recurso adicional](docs/imagens/promover.png)
-
----
+![Recurso adicional](docs/images/promover.png)
 
 # 🚀 Funcionalidades
 
