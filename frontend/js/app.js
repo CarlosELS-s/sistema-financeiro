@@ -1,3 +1,4 @@
+
 const API_URL = "/api";
 
 // ======================================
@@ -18,6 +19,7 @@ function ehVisitante() {
 
 const MODO_VISITANTE = ehVisitante();
 let cartoesDisponiveisOrcamento = [];
+let orcamentoEmEdicao = false;
 
 // ======================================
 // CATEGORIAS
@@ -91,6 +93,7 @@ function limparSessao() {
 
 function redirecionarLogin() {
     limparSessao();
+
     if (window.location.pathname !== "/login") {
         window.location.href = "/login";
     }
@@ -162,7 +165,8 @@ document.addEventListener("DOMContentLoaded", () => {
         redirecionarLogin();
         return;
     }
-        if (MODO_VISITANTE) {
+
+    if (MODO_VISITANTE) {
         const aviso = document.createElement("div");
 
         aviso.id = "avisoVisitante";
@@ -187,6 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         bloquearEdicaoVisitante();
     }
+
     const usuarioSalvo = localStorage.getItem("usuario");
 
     if (usuarioSalvo) {
@@ -251,19 +256,10 @@ document.addEventListener("DOMContentLoaded", () => {
         atualizarCamposPagamento();
     });
 
-    document.getElementById("formTransacao")?.addEventListener(
-        "submit",
-        salvarTransacao
-    );
-
+    // Apenas um evento para salvar orçamento.
     document.getElementById("formOrcamento")?.addEventListener(
         "submit",
         salvarOrcamento
-    );
-
-    document.getElementById("arquivoExcel")?.addEventListener(
-        "change",
-        importarExcel
     );
 
     document.getElementById("formaPagamento")?.addEventListener(
@@ -280,16 +276,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("formOrcamento")?.addEventListener("reset", () => {
         setTimeout(() => {
-            carregarCategoriasOrcamento();
+            orcamentoEmEdicao = false;
 
+            const categoria = document.getElementById("orcamentoCategoria");
+            const botao = document.getElementById("btnSalvarOrcamento");
             const mensagem = document.getElementById("mensagemOrcamento");
+
+            if (categoria) categoria.disabled = false;
+            if (botao) botao.textContent = "Salvar orçamento";
             if (mensagem) mensagem.textContent = "";
+
+            carregarCategoriasOrcamento();
+            renderizarCartoesOrcamento();
+            atualizarVisibilidadeCartoesOrcamento();
         }, 0);
     });
 
     document.getElementById("orcamentoCategoria")?.addEventListener(
         "change",
         atualizarVisibilidadeCartoesOrcamento
+    );
+
+    document.getElementById("arquivoExcel")?.addEventListener(
+        "change",
+        importarExcel
     );
 });
 
@@ -329,7 +339,9 @@ function configurarOrcamentosRecolhiveis() {
 
 function configurarPagamento() {
     const forma = document.getElementById("formaPagamento");
+
     if (forma) forma.value = "pix";
+
     atualizarCamposPagamento();
 }
 
@@ -361,6 +373,7 @@ function atualizarCamposPagamento() {
 
 async function carregarCartoes() {
     const select = document.getElementById("cartaoSelecionado");
+
     if (!select) return;
 
     try {
@@ -370,9 +383,11 @@ async function carregarCartoes() {
 
         cartoes.forEach(cartao => {
             const option = document.createElement("option");
+
             option.value = cartao.id;
             option.textContent =
                 `${cartao.nome} - Disponível: ${formatarMoeda(cartao.disponivel_centavos / 100)}`;
+
             select.appendChild(option);
         });
 
@@ -409,8 +424,10 @@ function atualizarCategorias() {
 
     (categorias[tipoElemento.value] || categorias.despesa).forEach(categoria => {
         const option = document.createElement("option");
+
         option.value = categoria;
         option.textContent = categoria;
+
         select.appendChild(option);
     });
 }
@@ -457,6 +474,7 @@ async function carregarContasFixasDoMes(mes) {
 
 async function carregarDashboard() {
     const campoMes = document.getElementById("mesFiltro");
+
     if (!campoMes) return;
 
     const mes = campoMes.value;
@@ -512,6 +530,7 @@ async function carregarDashboard() {
 
         (dados.despesas_categoria || []).forEach(item => {
             const categoria = item.categoria || "Outros";
+
             categoriasAgrupadas.set(
                 categoria,
                 (categoriasAgrupadas.get(categoria) || 0) + Number(item.valor || 0)
@@ -520,6 +539,7 @@ async function carregarDashboard() {
 
         contasPendentes.forEach(conta => {
             const categoria = conta.categoria || "Contas";
+
             categoriasAgrupadas.set(
                 categoria,
                 (categoriasAgrupadas.get(categoria) || 0) + conta.valor
@@ -566,7 +586,10 @@ function atualizarGraficoCategorias(dados) {
 
     if (!grafico || !legenda) return;
 
-    const total = dados.reduce((soma, item) => soma + Number(item.valor), 0);
+    const total = dados.reduce(
+        (soma, item) => soma + Number(item.valor),
+        0
+    );
 
     document.getElementById("totalCategorias").textContent =
         formatarMoeda(total);
@@ -575,7 +598,8 @@ function atualizarGraficoCategorias(dados) {
 
     if (total <= 0) {
         grafico.style.background = "conic-gradient(#263247 0deg 360deg)";
-        legenda.innerHTML = '<span class="legend-item">Nenhuma despesa registrada</span>';
+        legenda.innerHTML =
+            '<span class="legend-item">Nenhuma despesa registrada</span>';
         return;
     }
 
@@ -592,11 +616,13 @@ function atualizarGraficoCategorias(dados) {
 
         const elemento = document.createElement("div");
         elemento.className = "legend-item";
+
         elemento.innerHTML = `
             <span class="legend-color" style="background:${cor}"></span>
             <span>${escaparHTML(item.categoria)}</span>
             <strong>${porcentagem.toFixed(1)}%</strong>
         `;
+
         legenda.appendChild(elemento);
     });
 
@@ -616,10 +642,12 @@ async function carregarTransacoes() {
 
     if (!tabela) return;
 
-    tabela.innerHTML = `<tr><td colspan="6" class="empty">Carregando...</td></tr>`;
+    tabela.innerHTML =
+        `<tr><td colspan="6" class="empty">Carregando...</td></tr>`;
 
     try {
         const parametros = new URLSearchParams();
+
         if (mes) parametros.append("mes", mes);
 
         const [transacoes, contasPendentes] = await Promise.all([
@@ -671,7 +699,9 @@ async function carregarTransacoes() {
         }
 
         if (origem) {
-            movimentacoes = movimentacoes.filter(item => item.origem === origem);
+            movimentacoes = movimentacoes.filter(
+                item => item.origem === origem
+            );
         }
 
         movimentacoes.sort((a, b) =>
@@ -705,9 +735,11 @@ async function carregarTransacoes() {
             let identificacao = "";
 
             if (ehPrevista) {
-                identificacao = `<span class="movement-tag tag-prevista">Prevista</span>`;
+                identificacao =
+                    `<span class="movement-tag tag-prevista">Prevista</span>`;
             } else if (ehParcelaCartao) {
-                identificacao = `<span class="movement-tag tag-cartao">Parcela do cartão</span>`;
+                identificacao =
+                    `<span class="movement-tag tag-cartao">Parcela do cartão</span>`;
             }
 
             let acao = "";
@@ -719,7 +751,8 @@ async function carregarTransacoes() {
             } else {
                 acao = `
                     <button class="delete-btn" title="Excluir movimentação"
-                        aria-label="Excluir movimentação" data-id="${transacao.id}">✕</button>
+                        aria-label="Excluir movimentação"
+                        data-id="${transacao.id}">✕</button>
                 `;
             }
 
@@ -752,8 +785,11 @@ async function carregarTransacoes() {
         });
     } catch (erro) {
         console.error("Erro ao listar movimentações:", erro);
+
         tabela.innerHTML = `
-            <tr><td colspan="6" class="empty">Erro ao carregar movimentações.</td></tr>
+            <tr><td colspan="6" class="empty">
+                Erro ao carregar movimentações.
+            </td></tr>
         `;
     }
 }
@@ -798,7 +834,9 @@ async function salvarTransacao(evento) {
         dados.forma_pagamento = formaPagamento;
 
         if (formaPagamento === "credito") {
-            const cartaoId = document.getElementById("cartaoSelecionado")?.value;
+            const cartaoId =
+                document.getElementById("cartaoSelecionado")?.value;
+
             const parcelas = Number(
                 document.getElementById("quantidadeParcelas")?.value
             );
@@ -862,12 +900,15 @@ async function salvarTransacao(evento) {
 // ======================================
 
 async function excluirTransacao(id) {
-    if (!confirm("Tem certeza que deseja excluir esta movimentação?")) return;
+    if (!confirm("Tem certeza que deseja excluir esta movimentação?")) {
+        return;
+    }
 
     try {
         await requisicao(`${API_URL}/transacoes/${id}`, {
             method: "DELETE"
         });
+
         atualizarTela();
     } catch (erro) {
         alert(erro.message);
@@ -882,11 +923,13 @@ function irParaFormulario() {
     document.getElementById("nova-transacao").scrollIntoView({
         behavior: "smooth"
     });
+
     document.getElementById("descricao").focus();
 }
 
 function mostrarMensagem(texto, tipo) {
     const mensagem = document.getElementById("mensagemFormulario");
+
     if (!mensagem) return;
 
     mensagem.textContent = texto;
@@ -900,6 +943,7 @@ function mostrarMensagem(texto, tipo) {
 async function exportarExcel() {
     try {
         const token = obterToken();
+
         if (!token) {
             redirecionarLogin();
             return;
@@ -955,6 +999,7 @@ async function exportarExcel() {
 
 async function importarExcel(evento) {
     const arquivo = evento.target.files[0];
+
     if (!arquivo) return;
 
     if (!arquivo.name.toLowerCase().endsWith(".xlsx")) {
@@ -1031,6 +1076,7 @@ function sairDaConta() {
 
 function carregarCategoriasOrcamento() {
     const select = document.getElementById("orcamentoCategoria");
+
     if (!select) return;
 
     const categoriaAtual = select.value;
@@ -1061,6 +1107,7 @@ function prepararSelecaoCartoesOrcamento() {
     }
 
     const grupo = document.createElement("div");
+
     grupo.id = "grupoCartoesOrcamento";
     grupo.style.display = "none";
     grupo.style.marginTop = "12px";
@@ -1089,7 +1136,9 @@ function prepararSelecaoCartoesOrcamento() {
 
     botao.addEventListener("click", () => {
         lista.hidden = !lista.hidden;
+
         botao.setAttribute("aria-expanded", String(!lista.hidden));
+
         document.getElementById("iconeCartoesOrcamento").textContent =
             lista.hidden ? "⌄" : "⌃";
     });
@@ -1098,15 +1147,20 @@ function prepararSelecaoCartoesOrcamento() {
         if (!grupo.contains(evento.target)) {
             lista.hidden = true;
             botao.setAttribute("aria-expanded", "false");
+
             document.getElementById("iconeCartoesOrcamento").textContent = "⌄";
         }
     });
 
-    categoria.addEventListener("change", atualizarVisibilidadeCartoesOrcamento);
+    categoria.addEventListener(
+        "change",
+        atualizarVisibilidadeCartoesOrcamento
+    );
 }
 
 async function carregarCartoesOrcamento() {
     const lista = document.getElementById("listaCartoesOrcamento");
+
     if (!lista) return;
 
     try {
@@ -1125,6 +1179,7 @@ async function carregarCartoesOrcamento() {
 
 function renderizarCartoesOrcamento(idsSelecionados = null) {
     const lista = document.getElementById("listaCartoesOrcamento");
+
     if (!lista) return;
 
     if (!cartoesDisponiveisOrcamento.length) {
@@ -1157,14 +1212,18 @@ function renderizarCartoesOrcamento(idsSelecionados = null) {
     document.getElementById("orcamentoTodosCartoes").addEventListener(
         "change",
         evento => {
-            renderizarCartoesOrcamento(evento.target.checked ? null : []);
+            renderizarCartoesOrcamento(
+                evento.target.checked ? null : []
+            );
         }
     );
 
     lista.querySelectorAll(".orcamento-cartao-checkbox").forEach(input => {
         input.addEventListener("change", () => {
             const marcados = [
-                ...lista.querySelectorAll(".orcamento-cartao-checkbox:checked")
+                ...lista.querySelectorAll(
+                    ".orcamento-cartao-checkbox:checked"
+                )
             ].map(item => Number(item.value));
 
             renderizarCartoesOrcamento(marcados);
@@ -1176,6 +1235,7 @@ function renderizarCartoesOrcamento(idsSelecionados = null) {
 
 function atualizarTextoCartoesOrcamento() {
     const texto = document.getElementById("textoCartoesOrcamento");
+
     if (!texto) return;
 
     const selecionados = [
@@ -1199,6 +1259,7 @@ function atualizarTextoCartoesOrcamento() {
 
     if (selecionados.length === 1) {
         const id = Number(selecionados[0].value);
+
         const cartao = cartoesDisponiveisOrcamento.find(
             item => Number(item.id) === id
         );
@@ -1242,7 +1303,8 @@ async function carregarOrcamentos() {
 
     if (!lista || !campoMes?.value) return;
 
-    lista.innerHTML = '<p class="empty">Carregando orçamentos...</p>';
+    lista.innerHTML =
+        '<p class="empty">Carregando orçamentos...</p>';
 
     try {
         const mes = campoMes.value;
@@ -1269,7 +1331,11 @@ async function carregarOrcamentos() {
         lista.innerHTML = "";
 
         orcamentos.forEach(orcamento => {
-            const percentual = Math.max(0, Number(orcamento.percentual || 0));
+            const percentual = Math.max(
+                0,
+                Number(orcamento.percentual || 0)
+            );
+
             const percentualVisual = Math.min(percentual, 100);
             const ultrapassou = Boolean(orcamento.ultrapassou);
             const restante = Number(orcamento.restante || 0);
@@ -1365,7 +1431,6 @@ async function carregarOrcamentos() {
 
             lista.appendChild(card);
         });
-
     } catch (erro) {
         console.error("Erro ao carregar orçamentos:", erro);
 
@@ -1374,6 +1439,190 @@ async function carregarOrcamentos() {
         `;
     }
 }
+
+// ======================================
+// SALVAR ORÇAMENTO
+// ======================================
+
+async function salvarOrcamento(evento) {
+    evento.preventDefault();
+
+    if (MODO_VISITANTE) return;
+
+    const formulario = document.getElementById("formOrcamento");
+    const categoria = document.getElementById("orcamentoCategoria");
+    const valor = document.getElementById("orcamentoValor");
+    const mesFiltro = document.getElementById("mesFiltro");
+    const botao = document.getElementById("btnSalvarOrcamento");
+    const mensagem = document.getElementById("mensagemOrcamento");
+
+    if (!categoria || !valor || !mesFiltro || !botao || !mensagem) {
+        console.error("Elementos do formulário de orçamento não encontrados.");
+        return;
+    }
+
+    const [ano, mes] = mesFiltro.value.split("-").map(Number);
+    const valorLimite = Number(valor.value);
+
+    if (
+        !categoria.value ||
+        !ano ||
+        !mes ||
+        !Number.isFinite(valorLimite) ||
+        valorLimite <= 0
+    ) {
+        mensagem.textContent = "Preencha os campos corretamente.";
+        mensagem.className = "form-message error";
+        return;
+    }
+
+    const dados = {
+        categoria: categoria.value,
+        ano,
+        mes,
+        valor_limite: valorLimite,
+        cartoes_ids: categoria.value === "Parcelados"
+            ? obterCartoesSelecionadosOrcamento()
+            : null
+    };
+
+    botao.disabled = true;
+    botao.textContent = "Salvando...";
+
+    try {
+        const resposta = await requisicao(`${API_URL}/orcamentos`, {
+            method: "POST",
+            body: JSON.stringify(dados)
+        });
+
+        mensagem.textContent =
+            resposta.mensagem || "Orçamento salvo com sucesso!";
+
+        mensagem.className = "form-message success";
+
+        formulario.reset();
+        orcamentoEmEdicao = false;
+
+        categoria.disabled = false;
+        botao.textContent = "Salvar orçamento";
+
+        carregarCategoriasOrcamento();
+        renderizarCartoesOrcamento();
+        atualizarVisibilidadeCartoesOrcamento();
+
+        await carregarOrcamentos();
+
+    } catch (erro) {
+        mensagem.textContent = erro.message;
+        mensagem.className = "form-message error";
+    } finally {
+        botao.disabled = false;
+        botao.textContent = orcamentoEmEdicao
+            ? "Atualizar orçamento"
+            : "Salvar orçamento";
+    }
+}
+
+// ======================================
+// EDITAR ORÇAMENTO
+// ======================================
+
+function editarOrcamento(orcamento) {
+    if (MODO_VISITANTE) return;
+
+    const categoria = document.getElementById("orcamentoCategoria");
+    const valor = document.getElementById("orcamentoValor");
+    const botao = document.getElementById("btnSalvarOrcamento");
+    const mensagem = document.getElementById("mensagemOrcamento");
+    const conteudo = document.getElementById("conteudoOrcamentos");
+
+    if (!categoria || !valor || !botao) return;
+
+    orcamentoEmEdicao = true;
+
+    categoria.value = orcamento.categoria;
+    categoria.disabled = true;
+
+    valor.value = Number(orcamento.limite).toFixed(2);
+
+    botao.textContent = "Atualizar orçamento";
+
+    if (mensagem) {
+        mensagem.textContent =
+            "Edite o limite e clique em Atualizar orçamento.";
+        mensagem.className = "form-message";
+    }
+
+    if (conteudo) {
+        conteudo.hidden = false;
+    }
+
+    atualizarVisibilidadeCartoesOrcamento();
+
+    if (orcamento.categoria === "Parcelados") {
+        renderizarCartoesOrcamento(orcamento.cartoes_ids);
+    }
+
+    document.getElementById("formOrcamento")?.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+
+    valor.focus();
+}
+
+// ======================================
+// EXCLUIR ORÇAMENTO
+// ======================================
+
+async function excluirOrcamento(id) {
+    if (MODO_VISITANTE) return;
+
+    if (!confirm("Deseja realmente excluir este orçamento?")) {
+        return;
+    }
+
+    try {
+        const resposta = await requisicao(
+            `${API_URL}/orcamentos/${id}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+        alert(resposta.mensagem || "Orçamento excluído com sucesso!");
+
+        await carregarOrcamentos();
+    } catch (erro) {
+        alert(erro.message);
+        console.error("Erro ao excluir orçamento:", erro);
+    }
+}
+
+// ======================================
+// FIXAR / DESAFIXAR ORÇAMENTO
+// ======================================
+
+async function alternarOrcamentoFixo(id) {
+    if (MODO_VISITANTE) return;
+
+    try {
+        const resposta = await requisicao(
+            `${API_URL}/orcamentos/${id}/fixar`,
+            {
+                method: "POST"
+            }
+        );
+
+        alert(resposta.mensagem || "Orçamento atualizado!");
+
+        await carregarOrcamentos();
+    } catch (erro) {
+        alert(erro.message);
+        console.error("Erro ao alterar orçamento fixo:", erro);
+    }
+}
+
 // ======================================
 // BLOQUEAR EDIÇÃO DO VISITANTE
 // ======================================
@@ -1381,13 +1630,9 @@ async function carregarOrcamentos() {
 function bloquearEdicaoVisitante() {
     if (!MODO_VISITANTE) return;
 
-    // Esconde somente o formulário de cadastro de movimentações.
     document.getElementById("formTransacao")?.setAttribute("hidden", "");
-
-    // Esconde somente o formulário de cadastro de orçamentos.
     document.getElementById("formOrcamento")?.setAttribute("hidden", "");
 
-    // Esconde controles de importação e exportação.
     [
         "arquivoExcel",
         "btnExportar",
@@ -1404,8 +1649,6 @@ function bloquearEdicaoVisitante() {
         });
     });
 
-    // Esconde botões específicos de criação, sem esconder
-    // navegação, filtros ou o botão de sair.
     [
         "btnSalvar",
         "btnSalvarOrcamento"
