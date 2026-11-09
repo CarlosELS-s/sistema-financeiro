@@ -2277,3 +2277,10 @@ thead th:nth-child(5) {
 #btnVisitante {
     margin-top: 4px !important;
 }
+/* Garante que campos com hidden permaneçam ocultos */
+.form-group[hidden] {
+    display: none !important;
+}
+[hidden] {
+    display: none !important;
+}

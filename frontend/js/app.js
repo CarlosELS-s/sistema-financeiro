@@ -277,7 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const botao = document.getElementById("btnSalvarOrcamento");
             const mensagem = document.getElementById("mensagemOrcamento");
 
-            
+
             if (categoria) categoria.disabled = false;
             if (botao) botao.textContent = "Salvar orçamento";
             if (mensagem) mensagem.textContent = "";
@@ -376,8 +376,14 @@ async function carregarCartoes() {
 
     if (!select) return;
 
+    select.innerHTML = `<option value="">Carregando cartões...</option>`;
+
     try {
-        const cartoes = await requisicao(`${API_URL}/cartoes`);
+        const resposta = await requisicao(`${API_URL}/cartoes`);
+
+        const cartoes = Array.isArray(resposta)
+            ? resposta
+            : (resposta.cartoes || []);
 
         select.innerHTML = `<option value="">Selecione um cartão</option>`;
 
@@ -386,20 +392,23 @@ async function carregarCartoes() {
 
             option.value = cartao.id;
             option.textContent =
-                `${cartao.nome} - Disponível: ${formatarMoeda(cartao.disponivel_centavos / 100)}`;
+                `${cartao.nome} - Disponível: ${formatarMoeda(Number(cartao.disponivel_centavos || 0) / 100)}`;
 
             select.appendChild(option);
         });
 
         if (!cartoes.length) {
-            select.innerHTML = `<option value="">Nenhum cartão cadastrado</option>`;
+            select.innerHTML =
+                `<option value="">Nenhum cartão cadastrado</option>`;
         }
+
     } catch (erro) {
         console.error("Erro ao carregar cartões:", erro);
-        select.innerHTML = `<option value="">Erro ao carregar cartões</option>`;
+
+        select.innerHTML =
+            `<option value="">Erro ao carregar cartões</option>`;
     }
 }
-
 // ======================================
 // ATUALIZAR TELA
 // ======================================
