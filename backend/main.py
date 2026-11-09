@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse
 from database import engine, Base####
 
 # Importar todos os modelos
-from models import (
+from models import (##
     Usuario,
     Transacao,
     ContaFixa,
